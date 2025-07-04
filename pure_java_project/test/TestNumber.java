@@ -1,1 +1,3 @@
-package pure_java_project.test;
+public class TestNumber{
+    
+}

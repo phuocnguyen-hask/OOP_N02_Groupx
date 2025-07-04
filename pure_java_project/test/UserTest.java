@@ -1,5 +1,3 @@
-package pure_java_project.test;
-import pure_java_project.src.*;
 
 public class UserTest {
     public static void main(String args[]){

@@ -1,6 +1,3 @@
-package pure_java_project.test;
-import pure_java_project.src.*;
-
 public class TestTime {
     public static void main(String[] args){
         Time t1 = new Time();

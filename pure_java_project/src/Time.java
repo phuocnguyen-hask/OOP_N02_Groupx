@@ -1,4 +1,4 @@
-package pure_java_project.src;
+
 
 public class Time {
     private int hour;

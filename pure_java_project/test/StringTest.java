@@ -1,1 +1,0 @@
-package pure_java_project.test;
