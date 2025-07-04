@@ -16,17 +16,13 @@ public class User {
     }
 
     //setter
-    public void setID(String id){this.userID = id;}
-    public void setTen(String ten){this.userTen = ten;}
-    public void setEmail(String email){this.userEmail = email;}
-    public void setPhoneNumber(String pn){this.userPhoneNumber = pn;}
+    public User setID(String id){this.userID = id; return this;}
+    public User setTen(String ten){this.userTen = ten; return this;}
+    public User setEmail(String email){this.userEmail = email; return this;}
+    public User setPhoneNumber(String pn){this.userPhoneNumber = pn; return this;}
 
     User setUser(String id, String ten, String email, String pn){
-        setID(id);
-        setTen(ten);
-        setEmail(email);
-        setPhoneNumber(pn);
-        return this;
+        return this.setID(id).setTen(ten).setEmail(email).setPhoneNumber(pn);
     }
 
     //getter

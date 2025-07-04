@@ -11,7 +11,7 @@ public class UserTest {
         System.out.println("default pn: " + firstUser.getPhoneNumber());
 
         //set in4
-        User secondUser = new User("123", "hello, world!", "meowmeow@gmail.com", "09-232-849");
+        User secondUser = new User("123123", "hello, world!", "meowmeow@gmail.com", "09-232-849");
 
         System.out.println("\n\n\n");
 
