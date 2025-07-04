@@ -1,3 +1,4 @@
+package pure_java_project.src;
 public class BreakAndContinue {
     public static void main(String[] args) {
         for (int i = 0; i < 100; i++) {
