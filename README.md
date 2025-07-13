@@ -33,6 +33,6 @@
     + Ngày trả
     + Ngày trả thực tế
   #### Sơ đồ quản lí
-  ![Sơ đồ quản lí](images/sdql.png)
+  ![Sơ đồ quản lí](diagram/images/sdql.png)
    
 
