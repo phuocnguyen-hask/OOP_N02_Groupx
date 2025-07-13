@@ -32,6 +32,7 @@
     + Ngày mượn
     + Ngày trả
     + Ngày trả thực tế
-         
+  
+  ![Sơ đồ quản lí](images/sdql.png)
    
 
