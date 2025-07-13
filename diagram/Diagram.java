@@ -19,10 +19,10 @@ public class Diagram {
     }
 }
 
-class User{
+class SystemUser{
     private String userName;
     private String passWord;
-    public User(String userName,String passWord){
+    public SystemUser(String userName,String passWord){
         this.userName = userName;
         this.passWord = passWord;
     }
@@ -30,7 +30,7 @@ class User{
         return userName.equals(tenDangNhap) && passWord.equals(matKhau);
     }
 }
-class Librarian extends User{
+class Librarian extends SystemUser{
     private String name;
     private String employeeID;
     public Librarian(String userName, String passWord, String name, String employeeID){
