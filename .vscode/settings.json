@@ -1,0 +1,9 @@
+{
+    "java.project.sourcePaths": [
+        "pure_java_project/test",
+        "pure_java_project/src",
+        "diagram",
+        "midterm"
+    ],
+    "java.project.referencedLibraries": []
+}
