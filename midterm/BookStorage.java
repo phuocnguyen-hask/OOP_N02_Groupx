@@ -2,9 +2,22 @@ import java.io.*;
 import java.util.ArrayList;
 public abstract class BookStorage {
     public static void main(String[] args){
-        Book oneBook = new Book("2893", "MeowMeow", "Me", "Fantasy", 23, "available", 23000);
+        Book oneBook = new Book("2893",
+        "MeowMeow",
+        "Me", 
+        "Fantasy",
+        23, 
+        "available",
+        23000);
         ArrayList<Book> arrayList = new ArrayList<>();
         arrayList.add(oneBook);
+        arrayList.add(new Book("20036",
+                                "GauGau", 
+                                "Me", 
+                                "Comedy", 
+                                223, 
+                                "available", 
+                                30000));
         BookStorage.saveBooks(arrayList);
         ArrayList<Book> bookStorage = BookStorage.getBooks();
         for (Book book : bookStorage){

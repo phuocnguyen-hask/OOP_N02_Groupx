@@ -3,7 +3,8 @@
         "pure_java_project/test",
         "pure_java_project/src",
         "diagram",
-        "midterm"
+        "midterm",
+        "Phone"
     ],
     "java.project.referencedLibraries": []
 }
