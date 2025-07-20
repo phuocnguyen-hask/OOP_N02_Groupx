@@ -10,7 +10,7 @@ public class BookStorage {
                 books = (ArrayList<Book>) ois.readObject();    
             }
         } else{
-            books = new ArrayList();
+            books = new ArrayList<>();
         }
     }
     public ArrayList<Book> getBooks(){return books;}
@@ -24,5 +24,17 @@ public class BookStorage {
             }
         }
         return new Book(0, "1", "1", 0);
+    }
+    public void saveBook(){
+        try{
+            File file = new File("./database/books.obj");
+            FileOutputStream fos = new FileOutputStream(file);
+            ObjectOutputStream oos = new ObjectOutputStream(fos);
+            oos.writeObject(books);
+            oos.close();
+        } catch(Exception exception){
+            exception.printStackTrace();
+        }
+
     }
 }
