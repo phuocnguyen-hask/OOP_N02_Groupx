@@ -4,7 +4,7 @@ public class BookStorage {
     private ArrayList<Book> books;
     public BookStorage() throws IOException, ClassNotFoundException{
         File file = new File("./database/books.obj");
-        if (file.exists()){
+        if (file.exists() && file.length() != 0){
             try (FileInputStream fis = new FileInputStream(file);
             ObjectInputStream ois = new ObjectInputStream(fis)){
                 books = (ArrayList<Book>) ois.readObject();    
@@ -23,7 +23,7 @@ public class BookStorage {
                 return book;
             }
         }
-        return new Book(0, "1", "1", 0);
+        return null;
     }
     public void saveBook(){
         try{
