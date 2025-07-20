@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Collections;
 import java.io.*;
 public class BookStorage {
     private ArrayList<Book> books;
@@ -36,5 +37,32 @@ public class BookStorage {
             exception.printStackTrace();
         }
 
+    }
+    public int getQuant(){
+        int quant = 0;
+        for (Book book : books){
+            quant += book.getQuantity();
+        }
+        return quant;
+    }
+    public void removeDuplicatedBook() {
+        ArrayList<Book> uniqueBooks = new ArrayList<>();
+
+        for (Book book : books) {
+            boolean alreadyExists = false;
+
+            for (Book uniqueBook : uniqueBooks) {
+                if (book.getId() == uniqueBook.getId()) {
+                    alreadyExists = true;
+                    break;
+                }
+            }
+
+            if (!alreadyExists) {
+                uniqueBooks.add(book);
+            }
+        }
+
+        books = uniqueBooks;
     }
 }
