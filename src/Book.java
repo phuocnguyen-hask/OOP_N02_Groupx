@@ -15,4 +15,11 @@ public class Book {
     public String getTitle(){return title;}
     public String getAuthor(){return author;}
     public int getQuantity(){return quantity;}
+
+    public String toString(){
+        return "Id: " + id +
+        "\nTitle: " + title +
+        "\nAuthor: " + author +
+        "\nQuantity: " + quantity;
+    }
 }
