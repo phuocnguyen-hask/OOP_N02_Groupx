@@ -65,4 +65,10 @@ public class BookStorage {
 
         books = uniqueBooks;
     }
+    public void showBooks(){
+        for (Book book : books){
+            System.out.println(book.toString());
+            System.out.println("-------------");
+        }
+    }
 }
