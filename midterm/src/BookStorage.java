@@ -1,72 +1,48 @@
 package src;
 import java.io.*;
 import java.util.ArrayList;
-public abstract class BookStorage {
+public class BookStorage {
+    private ArrayList<Book> books;
     public static void main(String[] args){
-        Book oneBook = new Book("2893",
-        "MeowMeow",
-        "Me", 
-        "Fantasy",
-        23, 
-        "available",
-        23000);
-        ArrayList<Book> arrayList = new ArrayList<>();
-        arrayList.add(oneBook);
-        arrayList.add(new Book("20036",
-                                "GauGau", 
-                                "Me", 
-                                "Comedy", 
-                                223, 
-                                "available", 
-                                30000));
-        BookStorage.saveBooks(arrayList);
-        ArrayList<Book> bookStorage = BookStorage.getBooks();
-        for (Book book : bookStorage){
-            book.printBook();
-        }
-        BookStorage.editBook("2893", new Book("2800", "Gaugau", "Me", "Dark Fantasy", 23, "available", 23000));
-        bookStorage = BookStorage.getBooks();
-        for (Book book : bookStorage){
-            book.printBook();
-        }
-    }   
-    
-    private static final String books = "bookstorage.ser";
-    public static void saveBooks(ArrayList<Book> bookList){
+        
+    }
+    public BookStorage(){
         try{
-            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(books));
-            os.writeObject(bookList);
+            File file = new File("../database/bookstorage.ser");
+            if (file.length() != 0){
+                FileInputStream fis = new FileInputStream(file);
+                ObjectInputStream ois = new ObjectInputStream(fis);
+                books = (ArrayList<Book>) ois.readObject();
+                ois.close();
+            }
+            books = new ArrayList<Book>();
+        } catch (Exception e){
+            books = new ArrayList<Book>();
+            e.printStackTrace();
+        }
+    }
+    public void saveBooks(){
+        try{
+            ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(new File("./database/bookstorage.ser")));
+            os.writeObject(books);
             os.close();
         } catch (Exception e){
             e.printStackTrace();
         }
     }
-    public static ArrayList<Book> getBooks(){
-        File file = new File(books);
-        if (! file.exists()){
-            return new ArrayList<>();
-        }
-        try {
-            ObjectInputStream is = new ObjectInputStream(new FileInputStream(books));
-            ArrayList<Book> bStorage = (ArrayList<Book>) is.readObject();
-            is.close();
-            return bStorage;
-        } catch(Exception e){
-            return new ArrayList<>();
+    public ArrayList<Book> getBooks(){
+        return books;
+    }
+    public void removeBook(String id){
+        for (Book book : books){
+            if (book.getBookID().equals(id)){
+                books.remove(book);
+                saveBooks();
+                break;
+            }
         }
     }
-    public static void removeBook(String id){
-        ArrayList<Book> books = BookStorage.getBooks();
-        boolean remove = books.removeIf(book -> book.getBookID().equals(id));
-        if (remove){
-            BookStorage.saveBooks(books);
-            System.out.println("Remove book with ID " + id + " successfully");
-        }else{
-            System.out.println("Can't remove that book with ID: " + id);
-        }
-    }
-    public static void editBook(String id, Book newBook){
-        ArrayList<Book> books = BookStorage.getBooks();
+    public void editBook(String id, Book newBook){
         boolean found = false;
         for (int i = 0; i < books.size(); ++i){
             if (books.get(i).getBookID().equals(id)){
@@ -75,11 +51,18 @@ public abstract class BookStorage {
             }
         }
         if (found){
-            BookStorage.saveBooks(books);
+            saveBooks();
             System.out.println("Change book with ID " + id + "Successfully");
         }
         else{
             System.out.println("Can't find book");
+        }
+    }
+    public void showAllBooks(){
+        if (books.size() == 0){System.out.println("No book");}
+        for (Book book : books){
+            System.out.println(book.toString());
+            System.out.println("---------------");
         }
     }
     
