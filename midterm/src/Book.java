@@ -1,7 +1,7 @@
 package src;
 import java.io.Serializable;
 
-class Book implements Serializable{
+public class Book implements Serializable{
     private String bookID;
     private String title;
     private String author;
@@ -48,13 +48,13 @@ class Book implements Serializable{
     public double getPrice(){
         return price;
     }
-    public void printBook(){
-        System.out.println("BookID: " + this.getBookID());
-        System.out.println("Title: " + this.getTitle());
-        System.out.println("Author: " + this.getAuthor());
-        System.out.println("Category: " + this.getCategory());
-        System.out.println("Quantity: " + this.getQuant());
-        System.out.println("Status: " + this.getStatus());
-        System.out.println("Price: " + this.getPrice());
+    public String toString(){
+        return "BookID: " + this.getBookID() +
+        "Title: " + this.getTitle() +
+        "Author: " + this.getAuthor() +
+        "Category: " + this.getCategory() +
+        "Quantity: " + this.getQuant() +
+        "Status: " + this.getStatus() +
+        "Price: " + this.getPrice();
     }
 }
