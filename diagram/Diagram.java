@@ -1,3 +1,7 @@
+import src.Book;
+import src.BookReader;
+import src.Borrow;
+import src.Librarian;
 
 public class Diagram {
     public static void main(String[] args){
