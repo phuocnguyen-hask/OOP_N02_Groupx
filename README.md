@@ -37,4 +37,13 @@
   #### UML
   ![UML](diagram/images/class.jpg)
    
+## Thành viên: Le Minh Duc- MSSV:24101511
+### Chức năng: Tìm kiếm sách theo từ khóa (tên hoặc tác giả)
+- Sử dụng Stream API để lọc danh sách
+- Kiểm thử thành công với dữ liệu mẫu
+
+### Mô tả:
+Lớp: BookFeature.java
+Phương thức: search(String keyword)
+Nhập đầu vào từ người dùng, hiển thị danh sách kết quả.
 
