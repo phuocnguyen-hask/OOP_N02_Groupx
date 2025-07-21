@@ -12,15 +12,16 @@ public class BookFeature implements Searchable {
 
     @Override
     public void search(String keyword) {
-        List<Book> ketQua = bookStorage.getBooks().stream()
+        List<Book1> ketQua = bookStorage.getBooks().stream()
             .filter(book -> book.getTitle().toLowerCase().contains(keyword.toLowerCase()) ||
                             book.getAuthor().toLowerCase().contains(keyword.toLowerCase()))
             .collect(Collectors.toList());
 
         if (ketQua.isEmpty()) {
-            System.out.println(" Không tìm thấy sách nào.");
+            System.out.println("Không tìm thấy sách nào.");
         } else {
-            ketQua.forEach(System.out::println);
+            ketQua.forEach(book -> 
+                System.out.println(book.getId() + " - " + book.getTitle() + " - " + book.getAuthor()));
         }
     }
 }

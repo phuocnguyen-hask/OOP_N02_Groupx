@@ -9,7 +9,7 @@ public class BookStorage1 {
         this.books = books2;
     }
 
-    public ArrayList<Book> getBooks() {
+    public ArrayList<Book1> getBooks() {
         return books;
     }
 }
