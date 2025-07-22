@@ -23,13 +23,13 @@ public class BookStorage {
     public ArrayList<Book> getBooks(){return books;}
     public void addBook(Book book){
         books.add(book);
-        saveBook();
+        saveAndRefresh();
     }
     public void addBooks(ArrayList<Book> manyBooks){
         for (Book book : manyBooks){
             books.add(book);
         }
-        saveBook();
+        saveAndRefresh();
     }
     public void saveBook() {
         try {
@@ -62,6 +62,11 @@ public class BookStorage {
             books = new ArrayList<>();
             System.out.println("No books to reload; starting fresh.");
         }
+    }
+
+    public void saveAndRefresh(){
+        saveBook();
+        reloadBooks();
     }
 
 
@@ -107,7 +112,7 @@ public class BookStorage {
             Book book = iterator.next();
             if (book.getId() == id) {
                 iterator.remove();
-                saveBook(); // Don't forget to save!
+                saveAndRefresh(); // Don't forget to save!
                 return;
             }
         }
@@ -115,7 +120,7 @@ public class BookStorage {
 
     public void removeBook(Book book){
         books.remove(book);
-        saveBook();
+        saveAndRefresh();
     }
     
 }
