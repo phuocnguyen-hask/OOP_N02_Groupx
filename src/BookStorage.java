@@ -1,10 +1,11 @@
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.io.*;
 public class BookStorage {
     private ArrayList<Book> books;
     public BookStorage(){
-        File file = new File("./database/books.obj");
+        File file = new File("database/books.obj");
         if (file.exists() && file.length() != 0){
             try{
                 FileInputStream fis = new FileInputStream(file);
@@ -30,18 +31,41 @@ public class BookStorage {
         }
         saveBook();
     }
-    public void saveBook(){
-        try{
-            File file = new File("./database/books.obj");
+    public void saveBook() {
+        try {
+            File file = new File("database/books.obj");
+            file.getParentFile().mkdirs(); // ✅ Create "database" if it doesn't exist
+
             FileOutputStream fos = new FileOutputStream(file);
             ObjectOutputStream oos = new ObjectOutputStream(fos);
             oos.writeObject(books);
             oos.close();
-        } catch(Exception exception){
+
+            System.out.println("Books saved to: " + file.getAbsolutePath());
+        } catch (Exception exception) {
             exception.printStackTrace();
         }
-
     }
+    public void reloadBooks() {
+        File file = new File("database/books.obj");
+        if (file.exists() && file.length() != 0) {
+            try {
+                FileInputStream fis = new FileInputStream(file);
+                ObjectInputStream ois = new ObjectInputStream(fis);
+                books = (ArrayList<Book>) ois.readObject();
+                ois.close();
+                System.out.println("Books reloaded from file.");
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        } else {
+            books = new ArrayList<>();
+            System.out.println("No books to reload; starting fresh.");
+        }
+    }
+
+
+
     public void showBookbyBook(){
         for (Book book : books){
             System.out.println(book.toString());
@@ -78,11 +102,20 @@ public class BookStorage {
 }
 
     public void removeBookById(int id){
-        for (Book book : books){
-            if (book.getId() == id){
-                books.remove(book);
+        Iterator<Book> iterator = books.iterator();
+        while (iterator.hasNext()) {
+            Book book = iterator.next();
+            if (book.getId() == id) {
+                iterator.remove();
+                saveBook(); // Don't forget to save!
                 return;
             }
         }
     }
+
+    public void removeBook(Book book){
+        books.remove(book);
+        saveBook();
+    }
+    
 }
