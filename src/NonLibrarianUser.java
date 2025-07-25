@@ -4,6 +4,9 @@ public class NonLibrarianUser implements Librarian, Serializable{
     public void addBook(Book book){
         System.out.println("Can't add book");
     }
+    public BookStorage getStorage(){
+        return null;
+    }
     public void removeBook(int BookId){
         //can't remove
         System.out.println("Can't remove book");
