@@ -1,125 +1,103 @@
-import java.util.*;
 import java.io.*;
+import java.time.LocalDate;
+import java.util.*;
 
 public class BorrowStorage {
-    private ArrayList<Book> borrowBooks;
+    private ArrayList<BorrowBook> borrowList;
+    private BookStorage bookStorage;  // Access to central book storage
 
-    public BorrowStorage() {
-        reloadBorrowedBooks();
+    public BorrowStorage(BookStorage bookStorage) {
+        this.bookStorage = bookStorage;
+        loadBorrowListFromFile();
     }
 
-    private void reloadBorrowedBooks() {
-        File file = new File("database/borrowedBooks.obj");
-        if (file.exists() && file.length() != 0) {
-            try {
-                FileInputStream fis = new FileInputStream(file);
-                ObjectInputStream ois = new ObjectInputStream(fis);
-                borrowBooks = (ArrayList<Book>) ois.readObject();
-                ois.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-                borrowBooks = new ArrayList<>();
-            }
-        } else {
-            borrowBooks = new ArrayList<>();
-        }
-    }
-
-    public void saveBorrowedBook() {
-        File file = new File("database/borrowedBooks.obj");
-        try {
-            file.getParentFile().mkdirs();
-            FileOutputStream fos = new FileOutputStream(file);
-            ObjectOutputStream oos = new ObjectOutputStream(fos);
-            oos.writeObject(borrowBooks);
-            oos.close();
-            System.out.println("Borrowed books saved successfully to: " + file.getAbsolutePath());
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            System.out.println("Failed to save borrowed books.");
-        }
-    }
-
-    public void addBorrowedBooksByID(int id, int quant) {
-        reloadBorrowedBooks();
-        BookStorage bookStorage = new BookStorage();
-        ArrayList<Book> matchedBooks = new ArrayList<>();
-
+    public void borrowBook(int readerId, int bookId, LocalDate borrowDate, LocalDate returnDate) {
+        Book bookToBorrow = null;
         for (Book book : bookStorage.getBooks()) {
-            if (book.getId() == id) {
-                matchedBooks.add(book);
-                if (matchedBooks.size() == quant) break;
+            if (book.getId() == bookId) {
+                bookToBorrow = book;
+                break;
             }
         }
 
-        if (matchedBooks.size() < quant) {
-            System.out.println("Only " + matchedBooks.size() + " book(s) available with ID: " + id + ". Unable to borrow " + quant + ".");
+        if (bookToBorrow == null) {
+            System.out.println("Book with ID " + bookId + " not found.");
             return;
         }
 
-        for (Book book : matchedBooks) {
-            borrowBooks.add(book);
-            bookStorage.removeBook(book);
-        }
-
-        saveBorrowedBook();
-        System.out.println("Successfully borrowed " + quant + " book(s) with ID: " + id);
+        // Proceed with borrowing
+        BorrowBook borrow = new BorrowBook(readerId, bookToBorrow, borrowDate, returnDate);
+        borrowList.add(borrow);
+        bookStorage.removeBook(bookToBorrow);  // Remove 1 copy from storage
+        saveBorrowListToFile();
+        System.out.println("Book borrowed: " + bookToBorrow.getTitle());
     }
 
-    public void addBorrowedBooks(Book book, int quant) {
-        reloadBorrowedBooks();
-        BookStorage bookStorage = new BookStorage();
-
-        for (int i = 0; i < quant; ++i) {
-            borrowBooks.add(book);
-            bookStorage.removeBook(book);
-        }
-
-        saveBorrowedBook();
-        System.out.println("Successfully borrowed " + quant + " book(s).");
-    }
-
-    public void deleteBorrowedBooks(Book book, int quant) {
-        reloadBorrowedBooks();
-        BookStorage bookStorage = new BookStorage();
-        int removed = 0;
-        Iterator<Book> it = borrowBooks.iterator();
-
-        while (it.hasNext() && removed < quant) {
-            Book b = it.next();
-            if (b.getId() == book.getId()) {
-                it.remove();
-                bookStorage.addBook(book);
-                removed++;
+    public void returnBook(int readerId, int bookId) {
+        Iterator<BorrowBook> iterator = borrowList.iterator();
+        while (iterator.hasNext()) {
+            BorrowBook borrow = iterator.next();
+            if (borrow.getReaderId() == readerId && borrow.getBook().getId() == bookId) {
+                bookStorage.addBook(borrow.getBook());  // Return 1 copy to storage
+                iterator.remove();
+                saveBorrowListToFile();
+                System.out.println("Book returned: " + borrow.getBook().getTitle());
+                return;
             }
         }
-
-        saveBorrowedBook();
-        System.out.println("Returned " + removed + " book(s).");
+        System.out.println("No matching borrowed book found.");
     }
 
-    public void showAllBorrowedBook() {
-        reloadBorrowedBooks();
-
-        HashMap<Integer, Integer> bookCountMap = new HashMap<>();
-        HashMap<Integer, Book> bookReferenceMap = new HashMap<>();
-
-        for (Book book : borrowBooks) {
-            int id = book.getId();
-            bookCountMap.put(id, bookCountMap.getOrDefault(id, 0) + 1);
-            bookReferenceMap.putIfAbsent(id, book);
+    public void showAllBorrowedBooks() {
+        if (borrowList.isEmpty()) {
+            System.out.println("No books currently borrowed.");
+            return;
         }
+        for (BorrowBook borrow : borrowList) {
+            System.out.println(borrow);
+            System.out.println("---------------");
+        }
+    }
 
-        if (bookCountMap.isEmpty()) {
-            System.out.println("No borrowed books found.");
+    public void showBorrowedByReader(int readerId) {
+        boolean found = false;
+        for (BorrowBook borrow : borrowList) {
+            if (borrow.getReaderId() == readerId) {
+                System.out.println(borrow);
+                found = true;
+            }
+        }
+        if (!found) {
+            System.out.println("No borrowed books for reader: " + readerId);
+        }
+    }
+
+    private void saveBorrowListToFile() {
+        File file = new File("database/borrow.obj");
+        file.getParentFile().mkdirs();
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
+            oos.writeObject(borrowList);
+            System.out.println("Borrow list saved.");
+        } catch (Exception e) {
+            System.err.println("Failed to save borrow list.");
+            e.printStackTrace();
+        }
+    }
+
+    private void loadBorrowListFromFile() {
+        File file = new File("database/borrow.obj");
+        if (file.exists() && file.length() != 0) {
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+                borrowList = (ArrayList<BorrowBook>) ois.readObject();
+                System.out.println("Borrow list loaded.");
+            } catch (Exception e) {
+                borrowList = new ArrayList<>();
+                System.err.println("Failed to load borrow list.");
+                e.printStackTrace();
+            }
         } else {
-            for (Integer id : bookCountMap.keySet()) {
-                Book book = bookReferenceMap.get(id);
-                int quantity = bookCountMap.get(id);
-                System.out.println(book.toString());
-                System.out.println("Quantity: " + quantity);
-                System.out.println("-------------");
-            }
+            borrowList = new ArrayList<>();
+            System.out.println("No borrow list found. Starting fresh.");
         }
     }
 }
