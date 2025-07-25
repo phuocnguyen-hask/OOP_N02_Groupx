@@ -25,6 +25,17 @@ public class User {
     public String passWord() {
         return this.passWord;
     }
+    public int getId(){
+        return this.id;
+    }
+
+    public Librarian getLib(){
+        return this.lib;
+    }
+
+    public Reader getReader(){
+        return this.reader;
+    }
 
     // Librarian functions
     public void addBook(Book book) {
