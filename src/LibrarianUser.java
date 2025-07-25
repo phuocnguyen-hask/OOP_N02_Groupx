@@ -1,4 +1,6 @@
-public class LibrarianUser implements Librarian{
+import java.io.Serializable;
+
+public class LibrarianUser implements Librarian, Serializable{
     BookStorage bookStorage;
     public LibrarianUser(){
         this.bookStorage = new BookStorage();

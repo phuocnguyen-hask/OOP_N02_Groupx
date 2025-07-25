@@ -1,11 +1,12 @@
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.Scanner;
 
-public class ReaderUser implements Reader {
+public class ReaderUser implements Reader, Serializable{
     private int id;
     private String name;
     private BorrowStorage borrowStorage;
-    private Scanner scanner;
+    private transient Scanner scanner;
 
     public ReaderUser(int id, String name, BorrowStorage borrowStorage) {
         this.id = id;

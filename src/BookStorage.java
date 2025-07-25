@@ -1,7 +1,7 @@
 import java.io.*;
 import java.util.*;
 
-public class BookStorage {
+public class BookStorage implements Serializable{
     private ArrayList<Book> books;
 
     public BookStorage() {

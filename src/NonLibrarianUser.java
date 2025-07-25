@@ -1,4 +1,6 @@
-public class NonLibrarianUser implements Librarian{
+import java.io.Serializable;
+
+public class NonLibrarianUser implements Librarian, Serializable{
     public void addBook(Book book){
         System.out.println("Can't add book");
     }

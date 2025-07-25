@@ -2,7 +2,7 @@ import java.io.*;
 import java.time.LocalDate;
 import java.util.*;
 
-public class BorrowStorage {
+public class BorrowStorage implements Serializable{
     private ArrayList<BorrowBook> borrowList;
     private BookStorage bookStorage;  // Access to central book storage
 

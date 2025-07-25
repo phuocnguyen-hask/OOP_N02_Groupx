@@ -1,4 +1,6 @@
-public class NonReaderUser implements Reader{
+import java.io.Serializable;
+
+public class NonReaderUser implements Reader, Serializable{
     public void borrowBook(){
         System.out.println("can't borrow");
     }
