@@ -10,5 +10,9 @@ public class NonLibrarianUser implements Librarian{
         //don't have permission
         System.out.println("Don't have permisson");
     }
+    public void showAllBooks(){
+        //don't have permission
+        System.out.println("Don't have permission");
+    }
     
 }

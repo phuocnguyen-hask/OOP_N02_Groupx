@@ -11,6 +11,9 @@ public class LibrarianUser implements Librarian{
         this.bookStorage.removeBookById(id);
         System.out.println("remove successfully");
     }
+    public void showAllBooks(){
+        bookStorage.showAllBooks();
+    }
     public void manageUser(){
 
     }
