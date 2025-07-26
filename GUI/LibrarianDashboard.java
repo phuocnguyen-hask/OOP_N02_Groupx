@@ -30,19 +30,20 @@ public class LibrarianDashboard extends JFrame {
         model.setColumnIdentifiers(new Object[]{"ID", "Title", "Author"});
 
         bookTable = new JTable(model);
+        bookTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         add(new JScrollPane(bookTable), BorderLayout.CENTER);
 
-        // Buttons
-        JPanel buttonPanel = new JPanel();
-        JButton refreshButton = new JButton("Refresh");
-        JButton addBookButton = new JButton("Add Book");
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton addButton = new JButton("Add Book");
+        JButton removeButton = new JButton("Remove Book");
 
-        refreshButton.addActionListener(e -> refreshBookTable());
-        addBookButton.addActionListener(e -> showAddBookForm());
+        addButton.addActionListener(e -> showAddBookForm());
+        removeButton.addActionListener(e -> removeSelectedBooks(bookTable));
 
-        buttonPanel.add(refreshButton);
-        buttonPanel.add(addBookButton);
+        buttonPanel.add(addButton);
+        buttonPanel.add(removeButton);
         add(buttonPanel, BorderLayout.SOUTH);
+
 
         refreshBookTable();
         setVisible(true);
@@ -106,6 +107,39 @@ public class LibrarianDashboard extends JFrame {
         dialog.add(new JLabel());  // spacing
         dialog.add(submitButton);
         dialog.setVisible(true);
+    }
+
+    private void removeSelectedBooks(JTable table) {
+        int[] selectedRows = table.getSelectedRows();
+
+        if (selectedRows.length == 0) {
+            JOptionPane.showMessageDialog(this, "No books selected.");
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to delete selected books?",
+                "Confirm Deletion", JOptionPane.YES_NO_OPTION);
+
+        if (confirm != JOptionPane.YES_OPTION) return;
+
+        ArrayList<Book> booksToRemove = new ArrayList<>();
+        for (int row : selectedRows) {
+            int modelRow = table.convertRowIndexToModel(row);
+            int id = (int) table.getModel().getValueAt(modelRow, 0);
+
+            for (Book b : bookStorage.getBooks()) {
+                if (b.getId() == id) {
+                    booksToRemove.add(b);
+                    break;
+                }
+            }
+        }
+
+        for (Book b : booksToRemove) {
+            bookStorage.removeBook(b);
+        }
+        refreshBookTable();
     }
 
     
