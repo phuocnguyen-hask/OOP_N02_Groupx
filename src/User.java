@@ -8,6 +8,9 @@ public class User implements Serializable{
     private String userName;
     private String passWord;
 
+    private static final long serialVersionUID = 1L;
+
+
     private BorrowStorage borrowStorage;  // <-- new
 
     public User(int id, String userName, String passWord, BorrowStorage borrowStorage) {
@@ -50,6 +53,10 @@ public class User implements Serializable{
 
     public void showAllBooks() {
         this.lib.showAllBooks();
+    }
+
+    public BookStorage getStorage(){
+        return lib.getStorage();
     }
 
     public void manageUser() {

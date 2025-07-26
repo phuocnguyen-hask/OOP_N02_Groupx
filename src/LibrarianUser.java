@@ -1,6 +1,8 @@
 import java.io.Serializable;
 
 public class LibrarianUser implements Librarian, Serializable{
+    private static final long serialVersionUID = 1L;
+
     BookStorage bookStorage;
     public LibrarianUser(){
         this.bookStorage = new BookStorage();

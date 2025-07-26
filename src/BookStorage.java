@@ -2,6 +2,8 @@ import java.io.*;
 import java.util.*;
 
 public class BookStorage implements Serializable{
+    private static final long serialVersionUID = 1L;
+
     private ArrayList<Book> books;
 
     public BookStorage() {

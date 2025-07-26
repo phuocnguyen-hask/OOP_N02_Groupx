@@ -3,6 +3,8 @@ import java.time.LocalDate;
 import java.util.*;
 
 public class BorrowStorage implements Serializable{
+    private static final long serialVersionUID = 1L;
+
     private ArrayList<BorrowBook> borrowList;
     private BookStorage bookStorage;  // Access to central book storage
 

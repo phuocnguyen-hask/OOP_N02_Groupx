@@ -2,6 +2,8 @@ import java.io.Serializable;
 import java.time.LocalDate;
 
 public class BorrowBook implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private int readerId;
     private Book book;
     private LocalDate borrowDate;

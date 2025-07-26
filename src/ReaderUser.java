@@ -3,6 +3,8 @@ import java.time.LocalDate;
 import java.util.Scanner;
 
 public class ReaderUser implements Reader, Serializable{
+    private static final long serialVersionUID = 1L;
+
     private int id;
     private String name;
     private BorrowStorage borrowStorage;

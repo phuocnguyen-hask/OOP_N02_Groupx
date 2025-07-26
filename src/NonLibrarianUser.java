@@ -1,6 +1,8 @@
 import java.io.Serializable;
 
 public class NonLibrarianUser implements Librarian, Serializable{
+    private static final long serialVersionUID = 1L;
+
     public void addBook(Book book){
         System.out.println("Can't add book");
     }
