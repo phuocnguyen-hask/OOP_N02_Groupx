@@ -51,12 +51,12 @@ public class LoginFrame extends JFrame {
 
             // Proceed to next GUI or dashboard
             if (user.getReader() instanceof ReaderUser) {
-                new ReaderDashboard(user);  // You can define this class later
+                new ReaderDashboard(user);  // direct to reader dashboard
             } else if (user.getLib() instanceof LibrarianUser) {
-                new LibrarianDashboard(user);  // You can define this class too
+                new LibrarianDashboard(user);  // direct to lib dashboard
             }
 
-            dispose();  // Close login window
+            dispose();  // Close window
         } else {
             JOptionPane.showMessageDialog(this, "Invalid username or password", "Login Failed", JOptionPane.ERROR_MESSAGE);
         }
