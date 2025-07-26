@@ -42,6 +42,13 @@ public class BookStorage implements Serializable{
         books.remove(book);
         saveBooksToFile();
     }
+    public Book findBookById(int id) {
+        for (Book book : books) {
+            if (book.getId() == id) return book;
+        }
+        return null;
+    }
+
 
     public void showBookById(int id) {
         int quantity = 0;
