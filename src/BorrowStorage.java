@@ -56,16 +56,28 @@ public class BorrowStorage implements Serializable {
         System.out.println("No matching borrowed book found.");
     }
 
+    // 1) expose the BookStorage for approval logic (if not present yet)
     public BookStorage getBookStorage() {
-        return this.bookStorage;
+        return bookStorage;
     }
-    public java.util.List<BorrowBook> getBorrowedByReader(int readerId) {
-        java.util.ArrayList<BorrowBook> out = new java.util.ArrayList<>();
+
+    // 2) public reload so UIs can force refresh
+    public synchronized void reloadBorrowListFromFilePublic() {
+        loadBorrowListFromFile();   // calls your private loader
+    }
+
+    // 3) ALWAYS reload before reporting a reader’s borrowed list
+    public synchronized java.util.List<BorrowBook> getBorrowedByReader(int readerId) {
+        // ensure fresh data from file if another window/process wrote it
+        loadBorrowListFromFile();
+
+        java.util.List<BorrowBook> out = new java.util.ArrayList<>();
         for (BorrowBook b : borrowList) {
             if (b.getReaderId() == readerId) out.add(b);
         }
         return out;
     }
+
 
 
     public void showAllBorrowedBooks() {
