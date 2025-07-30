@@ -1,13 +1,23 @@
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
+import javax.swing.RowFilter;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
 
 public class LibrarianDashboard extends JFrame {
     private final User user;
     private final BookStorage bookStorage;
     private JTable bookTable;
     private DefaultTableModel model;
+
+    // Search + sorter
+    private JTextField searchField;
+    private TableRowSorter<DefaultTableModel> sorter;
 
     public LibrarianDashboard(User user) {
         this.user = user;
@@ -20,12 +30,26 @@ public class LibrarianDashboard extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        // Title
+        // ===== TOP: Title + Search =====
+        JPanel topPanel = new JPanel(new BorderLayout());
+
         JLabel title = new JLabel("Books in Library", SwingConstants.CENTER);
         title.setFont(new Font("Arial", Font.BOLD, 20));
-        add(title, BorderLayout.NORTH);
+        topPanel.add(title, BorderLayout.NORTH);
 
-        // Table (có cột Quantity)
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 6));
+        searchField = new JTextField(24);
+        JButton searchButton = new JButton("Search Title");
+        JButton clearButton = new JButton("Clear");
+        searchPanel.add(new JLabel("Title:"));
+        searchPanel.add(searchField);
+        searchPanel.add(searchButton);
+        searchPanel.add(clearButton);
+        topPanel.add(searchPanel, BorderLayout.SOUTH);
+
+        add(topPanel, BorderLayout.NORTH);
+
+        // ===== CENTER: Table (có cột Quantity) =====
         model = new DefaultTableModel(new Object[]{"Select", "ID", "Title", "Author", "Quantity"}, 0) {
             @Override
             public Class<?> getColumnClass(int columnIndex) {
@@ -38,9 +62,14 @@ public class LibrarianDashboard extends JFrame {
         };
         bookTable = new JTable(model);
         bookTable.setRowHeight(24);
+
+        // Sorter + filter (live search)
+        sorter = new TableRowSorter<>(model);
+        bookTable.setRowSorter(sorter);
+
         add(new JScrollPane(bookTable), BorderLayout.CENTER);
 
-        // Buttons
+        // ===== SOUTH: Buttons =====
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton refreshButton = new JButton("Refresh");
         JButton addButton = new JButton("Add Book");
@@ -61,14 +90,42 @@ public class LibrarianDashboard extends JFrame {
         buttonPanel.add(logoutButton);
         add(buttonPanel, BorderLayout.SOUTH);
 
+        // ===== Search actions =====
+        // Nút Search (vẫn giữ để không thay đổi thói quen), thực ra filter chạy live bên dưới
+        searchButton.addActionListener(e -> applyFilter(searchField.getText().trim()));
+        clearButton.addActionListener(e -> {
+            searchField.setText("");
+            applyFilter(null);
+        });
+        // Enter trong ô tìm kiếm = Search
+        searchField.addActionListener(e -> applyFilter(searchField.getText().trim()));
+        // LIVE SEARCH: gõ đến đâu lọc đến đó
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
+            private void onChange() { applyFilter(searchField.getText().trim()); }
+            public void insertUpdate(DocumentEvent e) { onChange(); }
+            public void removeUpdate(DocumentEvent e) { onChange(); }
+            public void changedUpdate(DocumentEvent e) { onChange(); }
+        });
+
+        // ===== UX: phím tắt + double‑click để edit =====
+        setupShortcuts();
+        bookTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2 && bookTable.getSelectedRow() != -1) {
+                    editSelectedBook();
+                }
+            }
+        });
+
         refreshBookTable();
         setVisible(true);
     }
 
-    // Load lại dữ liệu từ file và đổ ra bảng
+    // Load lại dữ liệu từ file và đổ ra bảng (tất cả)
     private void refreshBookTable() {
         model.setRowCount(0);
         bookStorage.reloadBooksFromFile();
+
         for (Book b : bookStorage.getBooks()) {
             // Nếu Book đã có getQuantity(), dùng trực tiếp; nếu chưa có, fallback = 1
             int qty = 1;
@@ -77,6 +134,25 @@ public class LibrarianDashboard extends JFrame {
             } catch (Exception ignore) {}
             model.addRow(new Object[]{false, b.getId(), b.getTitle(), b.getAuthor(), qty});
         }
+
+        // Sau khi reload dữ liệu, giữ nguyên filter đang có
+        applyFilter(searchField.getText().trim());
+    }
+
+    // Áp dụng filter cho sorter (lọc theo Title: cột 2; có thể mở rộng OR với Author: cột 3)
+    private void applyFilter(String query) {
+        if (query == null || query.isEmpty()) {
+            sorter.setRowFilter(null);
+            return;
+        }
+        String q = Pattern.quote(query);
+        // Lọc theo Title (cột 2), không phân biệt hoa thường
+        sorter.setRowFilter(RowFilter.regexFilter("(?i)" + q, 2));
+        // Nếu muốn cả Author: 
+        // sorter.setRowFilter(RowFilter.orFilter(List.of(
+        //     RowFilter.regexFilter("(?i)" + q, 2),
+        //     RowFilter.regexFilter("(?i)" + q, 3)
+        // )));
     }
 
     // Form thêm sách: có Quantity
@@ -153,7 +229,8 @@ public class LibrarianDashboard extends JFrame {
 
     // Remove: mở lựa chọn remove 1 / remove ALL / remove N
     private void removeSelectedBooks() {
-        java.util.List<Integer> selectedIds = new java.util.ArrayList<>();
+        List<Integer> selectedIds = new ArrayList<>();
+        // Duyệt MODEL để lấy các dòng đã tick (checkbox nằm trong model nên an toàn với filter/sort)
         for (int i = 0; i < model.getRowCount(); i++) {
             if (Boolean.TRUE.equals(model.getValueAt(i, 0))) {
                 selectedIds.add(((Number) model.getValueAt(i, 1)).intValue());
@@ -177,7 +254,7 @@ public class LibrarianDashboard extends JFrame {
             if (confirm != JOptionPane.YES_OPTION) return;
 
             for (int id : selectedIds) bookStorage.removeBookById(id);
-            refreshBookTable();
+            afterMutateRefresh();
 
         } else if (choice == 1) {
             int confirm = JOptionPane.showConfirmDialog(this,
@@ -185,7 +262,7 @@ public class LibrarianDashboard extends JFrame {
             if (confirm != JOptionPane.YES_OPTION) return;
 
             for (int id : selectedIds) bookStorage.removeAllCopiesById(id);
-            refreshBookTable();
+            afterMutateRefresh();
 
         } else if (choice == 2) {
             String input = JOptionPane.showInputDialog(this, "Enter N (copies to remove per ID):", "1");
@@ -201,7 +278,7 @@ public class LibrarianDashboard extends JFrame {
                 if (confirm != JOptionPane.YES_OPTION) return;
 
                 for (int id : selectedIds) bookStorage.removeCopiesById(id, n);
-                refreshBookTable();
+                afterMutateRefresh();
 
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(this, "N must be an integer.");
@@ -209,27 +286,27 @@ public class LibrarianDashboard extends JFrame {
         }
     }
 
-    // Edit một dòng (đã sửa cú pháp getValueAt)
+    // Edit một dòng (dựa trên checkbox tick đúng 1 dòng)
     private void editSelectedBook() {
-        int selectedRow = -1;
+        int selectedModelRow = -1;
         for (int i = 0; i < model.getRowCount(); i++) {
             if (Boolean.TRUE.equals(model.getValueAt(i, 0))) {
-                if (selectedRow != -1) {
+                if (selectedModelRow != -1) {
                     JOptionPane.showMessageDialog(this, "Please select only one book to edit.");
                     return;
                 }
-                selectedRow = i;
+                selectedModelRow = i;
             }
         }
-        if (selectedRow == -1) {
+        if (selectedModelRow == -1) {
             JOptionPane.showMessageDialog(this, "Please select a book to edit.");
             return;
         }
 
-        int oldId     = ((Number) model.getValueAt(selectedRow, 1)).intValue();
-        String oldTitle  = String.valueOf(model.getValueAt(selectedRow, 2));
-        String oldAuthor = String.valueOf(model.getValueAt(selectedRow, 3));
-        int oldQty    = ((Number) model.getValueAt(selectedRow, 4)).intValue();
+        int oldId     = ((Number) model.getValueAt(selectedModelRow, 1)).intValue();
+        String oldTitle  = String.valueOf(model.getValueAt(selectedModelRow, 2));
+        String oldAuthor = String.valueOf(model.getValueAt(selectedModelRow, 3));
+        int oldQty    = ((Number) model.getValueAt(selectedModelRow, 4)).intValue();
 
         JDialog dialog = new JDialog(this, "Edit Book", true);
         dialog.setSize(380, 240);
@@ -291,7 +368,7 @@ public class LibrarianDashboard extends JFrame {
                     }
                 }
 
-                refreshBookTable();
+                afterMutateRefresh();
                 dialog.dispose();
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(dialog, "ID must be an integer.");
@@ -317,10 +394,43 @@ public class LibrarianDashboard extends JFrame {
         });
     }
 
+    // Sau khi thêm/xoá/sửa: refresh bảng và giữ filter hiện tại
+    private void afterMutateRefresh() {
+        refreshBookTable();
+    }
+
     // helper
     private boolean safeEqualsIgnoreCase(String a, String b) {
         if (a == null && b == null) return true;
         if (a == null || b == null) return false;
         return a.equalsIgnoreCase(b);
+    }
+
+    // ===== phím tắt tiện dụng =====
+    private void setupShortcuts() {
+        InputMap im = bookTable.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap am = bookTable.getActionMap();
+
+        im.put(KeyStroke.getKeyStroke("control F"), "focusSearch");
+        am.put("focusSearch", new AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                searchField.requestFocusInWindow();
+                searchField.selectAll();
+            }
+        });
+
+        im.put(KeyStroke.getKeyStroke("control N"), "addBook");
+        am.put("addBook", new AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                showAddBookDialog();
+            }
+        });
+
+        im.put(KeyStroke.getKeyStroke("DELETE"), "removeSelected");
+        am.put("removeSelected", new AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                removeSelectedBooks();
+            }
+        });
     }
 }
