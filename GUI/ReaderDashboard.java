@@ -17,7 +17,10 @@ public class ReaderDashboard extends JFrame {
     private JTable bookTable;
     private DefaultTableModel model;
     private TableRowSorter<DefaultTableModel> sorter;
+
+    // LIVE SEARCH UI
     private JTextField searchField;
+    private JComboBox<String> scopeCombo; // Title / Author / Both
 
     public ReaderDashboard(User user) {
         this.user = user;
@@ -32,7 +35,7 @@ public class ReaderDashboard extends JFrame {
 
         setTitle("Reader Dashboard - " + user.username());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(900, 520);
+        setSize(920, 540);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
@@ -45,9 +48,14 @@ public class ReaderDashboard extends JFrame {
 
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 8));
         searchField = new JTextField(26);
-        JButton clearBtn = new JButton("Clear");
-        searchPanel.add(new JLabel("Search Title:"));
+        scopeCombo = new JComboBox<>(new String[]{"Title", "Author", "Both"});
+        scopeCombo.setSelectedItem("Both"); // mặc định tìm cả 2
+        JButton clearBtn  = new JButton("Clear");
+
+        searchPanel.add(new JLabel("Query:"));
         searchPanel.add(searchField);
+        searchPanel.add(new JLabel("In:"));
+        searchPanel.add(scopeCombo);
         searchPanel.add(clearBtn);
         topPanel.add(searchPanel, BorderLayout.SOUTH);
 
@@ -67,28 +75,26 @@ public class ReaderDashboard extends JFrame {
         bookTable.setRowHeight(24);
         bookTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        // sorter + live search
         sorter = new TableRowSorter<>(model);
         bookTable.setRowSorter(sorter);
 
-        // căn giữa cột ID, Quantity cho đẹp
+        // căn giữa cột ID, Quantity
         DefaultTableCellRenderer center = new DefaultTableCellRenderer();
         center.setHorizontalAlignment(SwingConstants.CENTER);
         bookTable.getColumnModel().getColumn(0).setCellRenderer(center);
         bookTable.getColumnModel().getColumn(3).setCellRenderer(center);
-        bookTable.setAutoCreateRowSorter(true);
 
         add(new JScrollPane(bookTable), BorderLayout.CENTER);
 
         /* ===== SOUTH: Buttons ===== */
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton myBorrowedBtn = new JButton("My Borrowed"); // NEW
+        JButton myBorrowedBtn = new JButton("My Borrowed");
         JButton borrowBtn  = new JButton("Borrow Selected");
         JButton returnBtn  = new JButton("Return by ID...");
         JButton refreshBtn = new JButton("Refresh");
         JButton logoutBtn  = new JButton("Logout");
 
-        btnPanel.add(myBorrowedBtn); // NEW
+        btnPanel.add(myBorrowedBtn);
         btnPanel.add(borrowBtn);
         btnPanel.add(returnBtn);
         btnPanel.add(refreshBtn);
@@ -96,33 +102,26 @@ public class ReaderDashboard extends JFrame {
 
         add(btnPanel, BorderLayout.SOUTH);
 
-        /* ===== Events ===== */
-        // Live search theo Title (cột 1). Muốn cả Author thì mở comment OR filter bên dưới.
+        /* ===== LIVE SEARCH Events ===== */
+        // 1) Gõ tới đâu lọc tới đó
         searchField.getDocument().addDocumentListener(new DocumentListener() {
-            private void apply() {
-                String q = searchField.getText().trim();
-                if (q.isEmpty()) {
-                    sorter.setRowFilter(null);
-                } else {
-                    String pat = Pattern.quote(q);
-                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + pat, 1)); // 1 = Title
-                    // sorter.setRowFilter(RowFilter.orFilter(List.of(
-                    //     RowFilter.regexFilter("(?i)" + pat, 1), // Title
-                    //     RowFilter.regexFilter("(?i)" + pat, 2)  // Author
-                    // )));
-                }
-            }
+            private void apply() { applyFilter(); }
             public void insertUpdate(DocumentEvent e) { apply(); }
             public void removeUpdate(DocumentEvent e) { apply(); }
             public void changedUpdate(DocumentEvent e) { apply(); }
         });
 
+        // 2) Đổi phạm vi lọc (Title/Author/Both) → re-apply ngay
+        scopeCombo.addActionListener(e -> applyFilter());
+
+        // 3) Clear search
         clearBtn.addActionListener(e -> {
             searchField.setText("");
             sorter.setRowFilter(null);
         });
 
-        myBorrowedBtn.addActionListener(e -> showMyBorrowedDialog()); // NEW
+        /* ===== Actions ===== */
+        myBorrowedBtn.addActionListener(e -> showMyBorrowedDialog());
         borrowBtn.addActionListener(e -> borrowSelectedOneCopy());
         returnBtn.addActionListener(e -> returnByIdDialog());
         refreshBtn.addActionListener(e -> refreshAvailableBooks());
@@ -145,13 +144,38 @@ public class ReaderDashboard extends JFrame {
         setVisible(true);
     }
 
+    /** Áp dụng filter theo text + phạm vi (Title/Author/Both) — LIVE SEARCH */
+    private void applyFilter() {
+        if (sorter == null) return;
+        String q = searchField.getText().trim();
+        if (q.isEmpty()) {
+            sorter.setRowFilter(null);
+            return;
+        }
+        String pat = "(?i)" + Pattern.quote(q); // không phân biệt hoa thường
+        String scope = (String) scopeCombo.getSelectedItem();
+        if ("Author".equals(scope)) {
+            sorter.setRowFilter(RowFilter.regexFilter(pat, 2)); // cột 2 = Author
+        } else if ("Both".equals(scope)) {
+            List<RowFilter<Object,Object>> ors = new ArrayList<>();
+            ors.add(RowFilter.regexFilter(pat, 1)); // Title
+            ors.add(RowFilter.regexFilter(pat, 2)); // Author
+            sorter.setRowFilter(RowFilter.orFilter(ors));
+        } else {
+            sorter.setRowFilter(RowFilter.regexFilter(pat, 1)); // Title
+        }
+    }
+
     /** Gom sách theo ID để hiển thị Quantity (đếm số bản trong storage) */
     private void refreshAvailableBooks() {
         model.setRowCount(0);
         bookStorage.reloadBooksFromFile();
 
         List<Book> all = bookStorage.getBooks();
-        if (all == null || all.isEmpty()) return;
+        if (all == null || all.isEmpty()) {
+            sorter.setRowFilter(null);
+            return;
+        }
 
         Map<Integer, Integer> qtyMap = new LinkedHashMap<>();
         Map<Integer, Book> refMap = new LinkedHashMap<>();
@@ -169,13 +193,8 @@ public class ReaderDashboard extends JFrame {
             model.addRow(new Object[]{ id, ref.getTitle(), ref.getAuthor(), qty });
         }
 
-        // giữ filter hiện tại
-        String q = searchField.getText().trim();
-        if (!q.isEmpty()) {
-            sorter.setRowFilter(RowFilter.regexFilter("(?i)" + Pattern.quote(q), 1));
-        } else {
-            sorter.setRowFilter(null);
-        }
+        // GIỮ LẠI LIVE FILTER SAU KHI REFRESH
+        applyFilter();
     }
 
     /** Mượn 1 bản của ID đang chọn */
@@ -236,11 +255,11 @@ public class ReaderDashboard extends JFrame {
         }
     }
 
-    /** NEW: Hộp thoại hiển thị danh sách sách đang mượn của user */
+    /** Hộp thoại hiển thị danh sách sách đang mượn + Return Selected */
     private void showMyBorrowedDialog() {
         java.util.List<BorrowBook> borrowed = borrowStorage.getBorrowedByReader(user.getId());
         JDialog dialog = new JDialog(this, "My Borrowed Books", true);
-        dialog.setSize(700, 360);
+        dialog.setSize(720, 380);
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new BorderLayout(8, 8));
 
@@ -260,14 +279,11 @@ public class ReaderDashboard extends JFrame {
         center.setHorizontalAlignment(SwingConstants.CENTER);
         tbl.getColumnModel().getColumn(0).setCellRenderer(center);
 
-        // đổ dữ liệu
         for (BorrowBook bb : borrowed) {
             Book bk = bb.getBook();
             String bd = String.valueOf(bb.getBorrowDate());
             String rd = String.valueOf(bb.getReturnDate());
-            bm.addRow(new Object[]{
-                    bk.getId(), bk.getTitle(), bk.getAuthor(), bd, rd
-            });
+            bm.addRow(new Object[]{ bk.getId(), bk.getTitle(), bk.getAuthor(), bd, rd });
         }
 
         dialog.add(new JScrollPane(tbl), BorderLayout.CENTER);
@@ -279,7 +295,6 @@ public class ReaderDashboard extends JFrame {
         buttons.add(close);
         dialog.add(buttons, BorderLayout.SOUTH);
 
-        // Trả 1 bản từ dòng chọn
         returnSelected.addActionListener(e -> {
             int row = tbl.getSelectedRow();
             if (row == -1) {
@@ -293,7 +308,6 @@ public class ReaderDashboard extends JFrame {
             if (confirm != JOptionPane.YES_OPTION) return;
 
             borrowStorage.returnBook(user.getId(), bookId);
-            // Xóa dòng khỏi bảng và refresh danh sách khả dụng
             bm.removeRow(row);
             refreshAvailableBooks();
             JOptionPane.showMessageDialog(dialog, "Returned successfully.");
@@ -347,7 +361,6 @@ public class ReaderDashboard extends JFrame {
             }
         });
 
-        // NEW: Ctrl+B mở My Borrowed
         im.put(KeyStroke.getKeyStroke("control B"), "myBorrowed");
         am.put("myBorrowed", new AbstractAction() {
             public void actionPerformed(java.awt.event.ActionEvent e) {
