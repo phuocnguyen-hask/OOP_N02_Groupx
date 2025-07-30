@@ -112,17 +112,18 @@ public class LoginFrame extends JFrame {
             JOptionPane.showMessageDialog(this, "Login successful!", "Welcome", JOptionPane.INFORMATION_MESSAGE);
 
             // Điều hướng dựa vào vai trò đã set trong User
-            if (user.getReader() instanceof ReaderUser) {
-                new ReaderDashboard(user);
-            } else if (user.getLib() instanceof LibrarianUser) {
-                new LibrarianDashboard(user);
-            } else {
-                // nếu chưa set role, mặc định cho vào Reader
-                user.setReaderRole();
-                new ReaderDashboard(user);
+            // đảm bảo user có BorrowStorage (nếu user cũ load từ file)
+            if (user.getBorrowStorage() == null) {
+                user.setBorrowStorage(this.borrowStorage);
             }
 
-            dispose();  // Close login window
+            // đảm bảo có BorrowStorage nếu user cũ thiếu
+            if (user.getBorrowStorage() == null) user.setBorrowStorage(this.borrowStorage);
+
+            if (user.isLibrarian()) new LibrarianDashboard(user);
+            else new ReaderDashboard(user);
+            dispose();
+
         } else {
             JOptionPane.showMessageDialog(this, "Invalid username or password", "Login Failed", JOptionPane.ERROR_MESSAGE);
         }
