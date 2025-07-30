@@ -78,34 +78,27 @@ public class BookStorage implements Serializable {
 
     // ---- HÀM MỚI: xoá N bản hoặc xoá hết ----
 
-    /** Giảm 'copies' bản cho ID; nếu copies >= quantity hiện tại thì xoá đầu sách. */
     public boolean removeCopiesById(int id, int copies) {
         if (copies <= 0) return false;
-        if (indexById == null) rebuildIndex();
-
-        Book b = indexById.get(id);
-        if (b == null) return false;
-
-        if (b.getQuantity() > copies) {
-            b.setQuantity(b.getQuantity() - copies);
-        } else {
-            books.remove(b);
-            indexById.remove(id);
+        boolean changed = false;
+        for (int i = 0; i < copies; i++) {
+            Book b = findBookById(id);
+            if (b == null) break;     // hết sách để xoá
+            removeBookById(id);
+            changed = true;
         }
-        saveBooksToFile();
-        return true;
+        return changed;
     }
 
-    /** Xoá toàn bộ bản của ID. */
     public boolean removeAllCopiesById(int id) {
-        if (indexById == null) rebuildIndex();
-        Book b = indexById.get(id);
-        if (b == null) return false;
-        books.remove(b);
-        indexById.remove(id);
-        saveBooksToFile();
-        return true;
+        boolean changed = false;
+        while (findBookById(id) != null) {
+            removeBookById(id);       // lặp cho tới khi không còn bản nào của ID này
+            changed = true;
+        }
+        return changed;
     }
+
 
     public void showBookById(int id) {
         Book existing = findBookById(id);
