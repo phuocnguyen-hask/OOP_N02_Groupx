@@ -1,3 +1,4 @@
+// BorrowStorage.java
 import java.io.*;
 import java.time.LocalDate;
 import java.util.*;
@@ -55,6 +56,18 @@ public class BorrowStorage implements Serializable {
         System.out.println("No matching borrowed book found.");
     }
 
+    public BookStorage getBookStorage() {
+        return this.bookStorage;
+    }
+    public java.util.List<BorrowBook> getBorrowedByReader(int readerId) {
+        java.util.ArrayList<BorrowBook> out = new java.util.ArrayList<>();
+        for (BorrowBook b : borrowList) {
+            if (b.getReaderId() == readerId) out.add(b);
+        }
+        return out;
+    }
+
+
     public void showAllBorrowedBooks() {
         if (borrowList.isEmpty()) {
             System.out.println("No books currently borrowed.");
@@ -77,6 +90,17 @@ public class BorrowStorage implements Serializable {
         if (!found) {
             System.out.println("No borrowed books for reader: " + readerId);
         }
+    }
+
+    // --- NEW: safely expose current reader's borrowed items ---
+    public List<BorrowBook> listBorrowedByReader(int readerId) {
+        List<BorrowBook> result = new ArrayList<>();
+        for (BorrowBook b : borrowList) {
+            if (b.getReaderId() == readerId) {
+                result.add(b);
+            }
+        }
+        return Collections.unmodifiableList(result);
     }
 
     // ----------------- I/O helpers -----------------
