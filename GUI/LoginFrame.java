@@ -32,8 +32,8 @@ public class LoginFrame extends JFrame {
         setSize(480, 320);
         setLocationRelativeTo(null);
 
-        /* ===== Background ===== */
-        Image bg = loadBackgroundImage(); // /images/lib.jpg
+        /* ===== Background (nhẹ CPU, không blur) ===== */
+        Image bg = loadBackgroundImage(); // /images/lib.jpg hoặc ./images/lib.jpg
         BackgroundPanel bgPanel = new BackgroundPanel(bg);
         setContentPane(bgPanel); // dùng panel nền làm contentPane
         bgPanel.setLayout(new GridBagLayout());
@@ -41,17 +41,22 @@ public class LoginFrame extends JFrame {
         /* ===== Form (trong panel trong suốt) ===== */
         JPanel formWrapper = new TranslucentPanel(); // nền mờ cho dễ đọc
         formWrapper.setLayout(new GridBagLayout());
-        formWrapper.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        formWrapper.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
 
         GridBagConstraints f = new GridBagConstraints();
         f.insets = new Insets(6, 6, 6, 6);
         f.fill = GridBagConstraints.HORIZONTAL;
-        f.gridx = 0; f.gridy = 0; formWrapper.add(new JLabel("Username:"), f);
+
+        JLabel userLbl = new JLabel("Username:");
+        userLbl.setForeground(new Color(20, 20, 20));
+        f.gridx = 0; f.gridy = 0; formWrapper.add(userLbl, f);
 
         usernameField = new JTextField(18);
         f.gridx = 1; f.gridy = 0; formWrapper.add(usernameField, f);
 
-        f.gridx = 0; f.gridy = 1; formWrapper.add(new JLabel("Password:"), f);
+        JLabel passLbl = new JLabel("Password:");
+        passLbl.setForeground(new Color(20, 20, 20));
+        f.gridx = 0; f.gridy = 1; formWrapper.add(passLbl, f);
 
         passwordField = new JPasswordField(18);
         f.gridx = 1; f.gridy = 1; formWrapper.add(passwordField, f);
@@ -234,23 +239,43 @@ public class LoginFrame extends JFrame {
         return null; // không có ảnh → nền trơn
     }
 
-    /* ===== Panel nền vẽ ảnh scale full frame ===== */
+    /* ===== Panel nền vẽ ảnh scale full frame (nhẹ CPU, có cache) ===== */
     private static class BackgroundPanel extends JPanel {
-        private final Image image;
+        private final Image originalImage;
+        private Image scaled;                 // ảnh đã scale sẵn cho kích thước hiện tại
+        private Dimension lastSize = new Dimension(0, 0);
+
         BackgroundPanel(Image image) {
-            this.image = image;
+            this.originalImage = image;
             setOpaque(true);
         }
+
+        @Override
+        public void invalidate() {
+            super.invalidate();
+            scaled = null; // khi panel đổi size/layout, xoá cache để scale lại
+        }
+
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            if (image != null) {
-                g.drawImage(image, 0, 0, getWidth(), getHeight(), this);
-            } else {
+            int w = getWidth(), h = getHeight();
+            if (w <= 0 || h <= 0) return;
+
+            if (originalImage == null) {
                 // nền trơn khi không có ảnh
                 g.setColor(new Color(235, 238, 241));
-                g.fillRect(0, 0, getWidth(), getHeight());
+                g.fillRect(0, 0, w, h);
+                return;
             }
+
+            // Chỉ scale lại khi kích thước thay đổi
+            if (scaled == null || lastSize.width != w || lastSize.height != h) {
+                scaled = originalImage.getScaledInstance(w, h, Image.SCALE_SMOOTH);
+                lastSize.setSize(w, h);
+            }
+
+            g.drawImage(scaled, 0, 0, this);
         }
     }
 
