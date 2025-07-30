@@ -17,16 +17,23 @@ public class LibrarianDashboard extends JFrame {
 
     // Search + sorter
     private JTextField searchField;
+    private JComboBox<String> scopeCombo; // Title / Author / ID / Title+Author / All
     private TableRowSorter<DefaultTableModel> sorter;
+
+    // Column indexes (đỡ nhầm)
+    private static final int COL_SELECT  = 0;
+    private static final int COL_ID      = 1;
+    private static final int COL_TITLE   = 2;
+    private static final int COL_AUTHOR  = 3;
+    private static final int COL_QTY     = 4;
 
     public LibrarianDashboard(User user) {
         this.user = user;
-        // Nếu bạn có user.getStorage(), giữ nguyên. Nếu không, đổi sang user.getLib().getStorage()
         this.bookStorage = user.getStorage();
 
         setTitle("Librarian Dashboard - " + user.username());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(900, 500);
+        setSize(900, 520);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
@@ -39,11 +46,13 @@ public class LibrarianDashboard extends JFrame {
 
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 6));
         searchField = new JTextField(24);
-        JButton searchButton = new JButton("Search Title");
+        scopeCombo = new JComboBox<>(new String[]{"Title", "Author", "ID", "Title+Author", "All"});
+        scopeCombo.setSelectedItem("All"); // mặc định lọc cả 3 cột
         JButton clearButton = new JButton("Clear");
-        searchPanel.add(new JLabel("Title:"));
+        searchPanel.add(new JLabel("Query:"));
         searchPanel.add(searchField);
-        searchPanel.add(searchButton);
+        searchPanel.add(new JLabel("In:"));
+        searchPanel.add(scopeCombo);
         searchPanel.add(clearButton);
         topPanel.add(searchPanel, BorderLayout.SOUTH);
 
@@ -51,13 +60,11 @@ public class LibrarianDashboard extends JFrame {
 
         // ===== CENTER: Table (có cột Quantity) =====
         model = new DefaultTableModel(new Object[]{"Select", "ID", "Title", "Author", "Quantity"}, 0) {
-            @Override
-            public Class<?> getColumnClass(int columnIndex) {
-                return columnIndex == 0 ? Boolean.class : Object.class;
+            @Override public Class<?> getColumnClass(int columnIndex) {
+                return columnIndex == COL_SELECT ? Boolean.class : Object.class;
             }
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return column == 0; // chỉ cho tick checkbox
+            @Override public boolean isCellEditable(int row, int column) {
+                return column == COL_SELECT; // chỉ cho tick checkbox
             }
         };
         bookTable = new JTable(model);
@@ -65,6 +72,7 @@ public class LibrarianDashboard extends JFrame {
 
         // Sorter + filter (live search)
         sorter = new TableRowSorter<>(model);
+        sorter.setSortsOnUpdates(true);
         bookTable.setRowSorter(sorter);
 
         add(new JScrollPane(bookTable), BorderLayout.CENTER);
@@ -90,22 +98,23 @@ public class LibrarianDashboard extends JFrame {
         buttonPanel.add(logoutButton);
         add(buttonPanel, BorderLayout.SOUTH);
 
-        // ===== Search actions =====
-        // Nút Search (vẫn giữ để không thay đổi thói quen), thực ra filter chạy live bên dưới
-        searchButton.addActionListener(e -> applyFilter(searchField.getText().trim()));
-        clearButton.addActionListener(e -> {
-            searchField.setText("");
-            applyFilter(null);
-        });
-        // Enter trong ô tìm kiếm = Search
-        searchField.addActionListener(e -> applyFilter(searchField.getText().trim()));
-        // LIVE SEARCH: gõ đến đâu lọc đến đó
+        // ===== LIVE SEARCH =====
+        // gõ tới đâu lọc tới đó
         searchField.getDocument().addDocumentListener(new DocumentListener() {
             private void onChange() { applyFilter(searchField.getText().trim()); }
             public void insertUpdate(DocumentEvent e) { onChange(); }
             public void removeUpdate(DocumentEvent e) { onChange(); }
             public void changedUpdate(DocumentEvent e) { onChange(); }
         });
+        // đổi phạm vi lọc → re-apply
+        scopeCombo.addActionListener(e -> applyFilter(searchField.getText().trim()));
+        // Clear
+        clearButton.addActionListener(e -> {
+            searchField.setText("");
+            sorter.setRowFilter(null);
+        });
+        // Enter trong ô tìm kiếm = áp dụng filter (dù đã live)
+        searchField.addActionListener(e -> applyFilter(searchField.getText().trim()));
 
         // ===== UX: phím tắt + double‑click để edit =====
         setupShortcuts();
@@ -127,7 +136,6 @@ public class LibrarianDashboard extends JFrame {
         bookStorage.reloadBooksFromFile();
 
         for (Book b : bookStorage.getBooks()) {
-            // Nếu Book đã có getQuantity(), dùng trực tiếp; nếu chưa có, fallback = 1
             int qty = 1;
             try {
                 qty = (int) Book.class.getMethod("getQuantity").invoke(b);
@@ -135,24 +143,38 @@ public class LibrarianDashboard extends JFrame {
             model.addRow(new Object[]{false, b.getId(), b.getTitle(), b.getAuthor(), qty});
         }
 
-        // Sau khi reload dữ liệu, giữ nguyên filter đang có
+        // giữ nguyên filter hiện tại
         applyFilter(searchField.getText().trim());
     }
 
-    // Áp dụng filter cho sorter (lọc theo Title: cột 2; có thể mở rộng OR với Author: cột 3)
+    // Áp dụng filter theo Title/Author/ID/Title+Author/All
     private void applyFilter(String query) {
         if (query == null || query.isEmpty()) {
             sorter.setRowFilter(null);
             return;
         }
-        String q = Pattern.quote(query);
-        // Lọc theo Title (cột 2), không phân biệt hoa thường
-        sorter.setRowFilter(RowFilter.regexFilter("(?i)" + q, 2));
-        // Nếu muốn cả Author: 
-        // sorter.setRowFilter(RowFilter.orFilter(List.of(
-        //     RowFilter.regexFilter("(?i)" + q, 2),
-        //     RowFilter.regexFilter("(?i)" + q, 3)
-        // )));
+        String pat = "(?i)" + Pattern.quote(query);
+        String scope = (String) scopeCombo.getSelectedItem();
+
+        if ("Title".equals(scope)) {
+            sorter.setRowFilter(RowFilter.regexFilter(pat, COL_TITLE));
+        } else if ("Author".equals(scope)) {
+            sorter.setRowFilter(RowFilter.regexFilter(pat, COL_AUTHOR));
+        } else if ("ID".equals(scope)) {
+            // ID là Integer, regexFilter sẽ dùng toString() của giá trị -> vẫn match theo "contains"
+            sorter.setRowFilter(RowFilter.regexFilter(Pattern.quote(query), COL_ID));
+        } else if ("Title+Author".equals(scope)) {
+            List<RowFilter<Object,Object>> ors = new ArrayList<>();
+            ors.add(RowFilter.regexFilter(pat, COL_TITLE));
+            ors.add(RowFilter.regexFilter(pat, COL_AUTHOR));
+            sorter.setRowFilter(RowFilter.orFilter(ors));
+        } else { // "All" = ID OR Title OR Author
+            List<RowFilter<Object,Object>> ors = new ArrayList<>();
+            ors.add(RowFilter.regexFilter(Pattern.quote(query), COL_ID)); // ID
+            ors.add(RowFilter.regexFilter(pat, COL_TITLE));               // Title
+            ors.add(RowFilter.regexFilter(pat, COL_AUTHOR));              // Author
+            sorter.setRowFilter(RowFilter.orFilter(ors));
+        }
     }
 
     // Form thêm sách: có Quantity
@@ -195,16 +217,13 @@ public class LibrarianDashboard extends JFrame {
 
                 Book existing = bookStorage.findBookById(id);
                 if (existing == null) {
-                    // ID chưa tồn tại -> thêm quantity bản
                     for (int i = 0; i < quantity; i++) {
                         bookStorage.addBook(new Book(id, title, author));
                     }
                 } else {
-                    // ID đã tồn tại -> kiểm tra Title & Author
                     boolean sameTitle = safeEqualsIgnoreCase(existing.getTitle(), title);
                     boolean sameAuthor = safeEqualsIgnoreCase(existing.getAuthor(), author);
                     if (sameTitle && sameAuthor) {
-                        // tăng quantity bằng cách gọi addBook nhiều lần
                         for (int i = 0; i < quantity; i++) {
                             bookStorage.addBook(new Book(id, title, author));
                         }
@@ -222,7 +241,7 @@ public class LibrarianDashboard extends JFrame {
             }
         });
 
-        dialog.add(new JLabel());
+        dialog.add(new JLabel());  // spacing
         dialog.add(saveButton);
         dialog.setVisible(true);
     }
@@ -230,10 +249,9 @@ public class LibrarianDashboard extends JFrame {
     // Remove: mở lựa chọn remove 1 / remove ALL / remove N
     private void removeSelectedBooks() {
         List<Integer> selectedIds = new ArrayList<>();
-        // Duyệt MODEL để lấy các dòng đã tick (checkbox nằm trong model nên an toàn với filter/sort)
         for (int i = 0; i < model.getRowCount(); i++) {
-            if (Boolean.TRUE.equals(model.getValueAt(i, 0))) {
-                selectedIds.add(((Number) model.getValueAt(i, 1)).intValue());
+            if (Boolean.TRUE.equals(model.getValueAt(i, COL_SELECT))) {
+                selectedIds.add(((Number) model.getValueAt(i, COL_ID)).intValue());
             }
         }
         if (selectedIds.isEmpty()) {
@@ -290,7 +308,7 @@ public class LibrarianDashboard extends JFrame {
     private void editSelectedBook() {
         int selectedModelRow = -1;
         for (int i = 0; i < model.getRowCount(); i++) {
-            if (Boolean.TRUE.equals(model.getValueAt(i, 0))) {
+            if (Boolean.TRUE.equals(model.getValueAt(i, COL_SELECT))) {
                 if (selectedModelRow != -1) {
                     JOptionPane.showMessageDialog(this, "Please select only one book to edit.");
                     return;
@@ -303,10 +321,10 @@ public class LibrarianDashboard extends JFrame {
             return;
         }
 
-        int oldId     = ((Number) model.getValueAt(selectedModelRow, 1)).intValue();
-        String oldTitle  = String.valueOf(model.getValueAt(selectedModelRow, 2));
-        String oldAuthor = String.valueOf(model.getValueAt(selectedModelRow, 3));
-        int oldQty    = ((Number) model.getValueAt(selectedModelRow, 4)).intValue();
+        int oldId     = ((Number) model.getValueAt(selectedModelRow, COL_ID)).intValue();
+        String oldTitle  = String.valueOf(model.getValueAt(selectedModelRow, COL_TITLE));
+        String oldAuthor = String.valueOf(model.getValueAt(selectedModelRow, COL_AUTHOR));
+        int oldQty    = ((Number) model.getValueAt(selectedModelRow, COL_QTY)).intValue();
 
         JDialog dialog = new JDialog(this, "Edit Book", true);
         dialog.setSize(380, 240);
@@ -343,18 +361,14 @@ public class LibrarianDashboard extends JFrame {
                 }
 
                 if (newId == oldId) {
-                    // Không đổi ID -> đổi Title/Author, giữ nguyên tổng quantity
                     for (int i = 0; i < oldQty; i++) bookStorage.removeBookById(oldId);
                     for (int i = 0; i < oldQty; i++) bookStorage.addBook(new Book(newId, newTitle, newAuthor));
                 } else {
-                    // Đổi ID
                     Book dst = bookStorage.findBookById(newId);
                     if (dst == null) {
-                        // ID mới chưa tồn tại -> di chuyển toàn bộ số lượng sang ID mới
                         for (int i = 0; i < oldQty; i++) bookStorage.removeBookById(oldId);
                         for (int i = 0; i < oldQty; i++) bookStorage.addBook(new Book(newId, newTitle, newAuthor));
                     } else {
-                        // ID đích đã tồn tại -> phải trùng Title/Author để gộp
                         boolean sameTitle = safeEqualsIgnoreCase(dst.getTitle(), newTitle);
                         boolean sameAuthor = safeEqualsIgnoreCase(dst.getAuthor(), newAuthor);
                         if (!sameTitle || !sameAuthor) {
@@ -362,7 +376,6 @@ public class LibrarianDashboard extends JFrame {
                                     "Target ID exists with a different Title/Author.\nAction blocked.");
                             return;
                         }
-                        // Gộp: xoá toàn bộ oldId và thêm oldQty bản vào newId
                         for (int i = 0; i < oldQty; i++) bookStorage.removeBookById(oldId);
                         for (int i = 0; i < oldQty; i++) bookStorage.addBook(new Book(newId, newTitle, newAuthor));
                     }
@@ -380,18 +393,14 @@ public class LibrarianDashboard extends JFrame {
         dialog.setVisible(true);
     }
 
-    // Đăng xuất → quay lại LoginFrame (đúng constructor)
+    // Đăng xuất → quay lại LoginFrame
     private void doLogout() {
         int confirm = JOptionPane.showConfirmDialog(
                 this, "Do you want to logout?", "Logout", JOptionPane.YES_NO_OPTION);
         if (confirm != JOptionPane.YES_OPTION) return;
 
         dispose();
-
-        SwingUtilities.invokeLater(() -> {
-            // Dùng đúng constructor có tham số UserDatabase
-            new LoginFrame(new UserDatabase());
-        });
+        SwingUtilities.invokeLater(() -> new LoginFrame(new UserDatabase()));
     }
 
     // Sau khi thêm/xoá/sửa: refresh bảng và giữ filter hiện tại
@@ -399,7 +408,6 @@ public class LibrarianDashboard extends JFrame {
         refreshBookTable();
     }
 
-    // helper
     private boolean safeEqualsIgnoreCase(String a, String b) {
         if (a == null && b == null) return true;
         if (a == null || b == null) return false;
@@ -430,6 +438,13 @@ public class LibrarianDashboard extends JFrame {
         am.put("removeSelected", new AbstractAction() {
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 removeSelectedBooks();
+            }
+        });
+
+        im.put(KeyStroke.getKeyStroke("ENTER"), "editSelected");
+        am.put("editSelected", new AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                editSelectedBook();
             }
         });
     }
