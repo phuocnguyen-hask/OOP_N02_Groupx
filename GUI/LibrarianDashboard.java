@@ -16,7 +16,7 @@ public class LibrarianDashboard extends JFrame {
 
         setTitle("Librarian Dashboard - " + user.username());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(860, 480);
+        setSize(900, 500);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
@@ -25,13 +25,12 @@ public class LibrarianDashboard extends JFrame {
         title.setFont(new Font("Arial", Font.BOLD, 20));
         add(title, BorderLayout.NORTH);
 
-        // Table (thêm cột Quantity)
+        // Table (có cột Quantity)
         model = new DefaultTableModel(new Object[]{"Select", "ID", "Title", "Author", "Quantity"}, 0) {
             @Override
             public Class<?> getColumnClass(int columnIndex) {
-                return columnIndex == 0 ? Boolean.class : super.getColumnClass(columnIndex);
+                return columnIndex == 0 ? Boolean.class : Object.class;
             }
-
             @Override
             public boolean isCellEditable(int row, int column) {
                 return column == 0; // chỉ cho tick checkbox
@@ -47,16 +46,19 @@ public class LibrarianDashboard extends JFrame {
         JButton addButton = new JButton("Add Book");
         JButton removeButton = new JButton("Remove Selected");
         JButton editButton = new JButton("Edit Selected");
+        JButton logoutButton = new JButton("Logout");
 
         refreshButton.addActionListener(e -> refreshBookTable());
         addButton.addActionListener(e -> showAddBookDialog());
         removeButton.addActionListener(e -> removeSelectedBooks());
         editButton.addActionListener(e -> editSelectedBook());
+        logoutButton.addActionListener(e -> doLogout());
 
         buttonPanel.add(refreshButton);
         buttonPanel.add(addButton);
         buttonPanel.add(removeButton);
         buttonPanel.add(editButton);
+        buttonPanel.add(logoutButton);
         add(buttonPanel, BorderLayout.SOUTH);
 
         refreshBookTable();
@@ -68,14 +70,11 @@ public class LibrarianDashboard extends JFrame {
         model.setRowCount(0);
         bookStorage.reloadBooksFromFile();
         for (Book b : bookStorage.getBooks()) {
-            // Nếu Book của bạn CHƯA có quantity, hãy cập nhật Book/BookStorage theo bản mình đã gửi trước đó
+            // Nếu Book đã có getQuantity(), dùng trực tiếp; nếu chưa có, fallback = 1
             int qty = 1;
             try {
-                // nếu Book đã có getQuantity()
                 qty = (int) Book.class.getMethod("getQuantity").invoke(b);
-            } catch (Exception ignore) {
-                // fallback nếu chưa có quantity -> coi như 1
-            }
+            } catch (Exception ignore) {}
             model.addRow(new Object[]{false, b.getId(), b.getTitle(), b.getAuthor(), qty});
         }
     }
@@ -129,7 +128,7 @@ public class LibrarianDashboard extends JFrame {
                     boolean sameTitle = safeEqualsIgnoreCase(existing.getTitle(), title);
                     boolean sameAuthor = safeEqualsIgnoreCase(existing.getAuthor(), author);
                     if (sameTitle && sameAuthor) {
-                        // tăng quantity bằng cách gọi addBook nhiều lần (tương thích mọi phiên bản)
+                        // tăng quantity bằng cách gọi addBook nhiều lần
                         for (int i = 0; i < quantity; i++) {
                             bookStorage.addBook(new Book(id, title, author));
                         }
@@ -152,75 +151,65 @@ public class LibrarianDashboard extends JFrame {
         dialog.setVisible(true);
     }
 
+    // Remove: mở lựa chọn remove 1 / remove ALL / remove N
     private void removeSelectedBooks() {
-    // Lấy danh sách ID đã tick
-    java.util.List<Integer> selectedIds = new java.util.ArrayList<>();
-    for (int i = 0; i < model.getRowCount(); i++) {
-        if (Boolean.TRUE.equals(model.getValueAt(i, 0))) {
-            selectedIds.add((Integer) model.getValueAt(i, 1));
-        }
-    }
-    if (selectedIds.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "No books selected.");
-        return;
-    }
-
-    // Hộp thoại chọn chế độ xoá
-    String[] options = { "Remove 1 copy / ID", "Remove ALL copies / ID", "Remove N copies / ID..." };
-    int choice = JOptionPane.showOptionDialog(
-            this,
-            "Choose remove mode:",
-            "Remove Options",
-            JOptionPane.DEFAULT_OPTION,
-            JOptionPane.QUESTION_MESSAGE,
-            null,
-            options,
-            options[0]
-    );
-
-    if (choice == 0) {
-        // Mỗi ID giảm 1
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "Remove one copy for each selected book?", "Confirm", JOptionPane.YES_NO_OPTION);
-        if (confirm != JOptionPane.YES_OPTION) return;
-
-        for (int id : selectedIds) bookStorage.removeBookById(id);
-        refreshBookTable();
-
-    } else if (choice == 1) {
-        // Xoá hết
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "Remove ALL copies for each selected book?", "Confirm", JOptionPane.YES_NO_OPTION);
-        if (confirm != JOptionPane.YES_OPTION) return;
-
-        for (int id : selectedIds) bookStorage.removeAllCopiesById(id);
-        refreshBookTable();
-
-    } else if (choice == 2) {
-        // Xoá N bản
-        String input = JOptionPane.showInputDialog(this, "Enter N (copies to remove per ID):", "1");
-        if (input == null) return; // cancel
-        try {
-            int n = Integer.parseInt(input.trim());
-            if (n <= 0) {
-                JOptionPane.showMessageDialog(this, "N must be >= 1.");
-                return;
+        java.util.List<Integer> selectedIds = new java.util.ArrayList<>();
+        for (int i = 0; i < model.getRowCount(); i++) {
+            if (Boolean.TRUE.equals(model.getValueAt(i, 0))) {
+                selectedIds.add(((Number) model.getValueAt(i, 1)).intValue());
             }
+        }
+        if (selectedIds.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No books selected.");
+            return;
+        }
+
+        String[] options = { "Remove 1 copy / ID", "Remove ALL copies / ID", "Remove N copies / ID..." };
+        int choice = JOptionPane.showOptionDialog(
+                this, "Choose remove mode:", "Remove Options",
+                JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE,
+                null, options, options[0]
+        );
+
+        if (choice == 0) {
             int confirm = JOptionPane.showConfirmDialog(this,
-                    "Remove " + n + " copies for each selected book?", "Confirm", JOptionPane.YES_NO_OPTION);
+                    "Remove one copy for each selected book?", "Confirm", JOptionPane.YES_NO_OPTION);
             if (confirm != JOptionPane.YES_OPTION) return;
 
-            for (int id : selectedIds) bookStorage.removeCopiesById(id, n);
+            for (int id : selectedIds) bookStorage.removeBookById(id);
             refreshBookTable();
 
-        } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "N must be an integer.");
+        } else if (choice == 1) {
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Remove ALL copies for each selected book?", "Confirm", JOptionPane.YES_NO_OPTION);
+            if (confirm != JOptionPane.YES_OPTION) return;
+
+            for (int id : selectedIds) bookStorage.removeAllCopiesById(id);
+            refreshBookTable();
+
+        } else if (choice == 2) {
+            String input = JOptionPane.showInputDialog(this, "Enter N (copies to remove per ID):", "1");
+            if (input == null) return; // cancel
+            try {
+                int n = Integer.parseInt(input.trim());
+                if (n <= 0) {
+                    JOptionPane.showMessageDialog(this, "N must be >= 1.");
+                    return;
+                }
+                int confirm = JOptionPane.showConfirmDialog(this,
+                        "Remove " + n + " copies for each selected book?", "Confirm", JOptionPane.YES_NO_OPTION);
+                if (confirm != JOptionPane.YES_OPTION) return;
+
+                for (int id : selectedIds) bookStorage.removeCopiesById(id, n);
+                refreshBookTable();
+
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "N must be an integer.");
+            }
         }
     }
-}
 
-
-    // Sửa một dòng (có thể đổi ID; nếu ID đích tồn tại thì phải trùng Title/Author để gộp)
+    // Edit một dòng (đã sửa cú pháp getValueAt)
     private void editSelectedBook() {
         int selectedRow = -1;
         for (int i = 0; i < model.getRowCount(); i++) {
@@ -237,10 +226,10 @@ public class LibrarianDashboard extends JFrame {
             return;
         }
 
-        int oldId = (int) model.getValueAt(selectedRow, 1);
-        String oldTitle = (String) model.getValueAt(selectedRow, 2);
-        String oldAuthor = (String) model.getValueAt(selectedRow, 3);
-        int oldQty = (int) model.getValueAt(selectedRow, 4);
+        int oldId     = ((Number) model.getValueAt(selectedRow, 1)).intValue();
+        String oldTitle  = String.valueOf(model.getValueAt(selectedRow, 2));
+        String oldAuthor = String.valueOf(model.getValueAt(selectedRow, 3));
+        int oldQty    = ((Number) model.getValueAt(selectedRow, 4)).intValue();
 
         JDialog dialog = new JDialog(this, "Edit Book", true);
         dialog.setSize(380, 240);
@@ -277,8 +266,7 @@ public class LibrarianDashboard extends JFrame {
                 }
 
                 if (newId == oldId) {
-                    // Không đổi ID -> chỉ đổi Title/Author, giữ nguyên tổng quantity
-                    // Thực hiện an toàn: xóa toàn bộ oldQty rồi thêm lại oldQty bản với Title/Author mới
+                    // Không đổi ID -> đổi Title/Author, giữ nguyên tổng quantity
                     for (int i = 0; i < oldQty; i++) bookStorage.removeBookById(oldId);
                     for (int i = 0; i < oldQty; i++) bookStorage.addBook(new Book(newId, newTitle, newAuthor));
                 } else {
@@ -313,6 +301,20 @@ public class LibrarianDashboard extends JFrame {
         dialog.add(new JLabel());
         dialog.add(updateButton);
         dialog.setVisible(true);
+    }
+
+    // Đăng xuất → quay lại LoginFrame (đúng constructor)
+    private void doLogout() {
+        int confirm = JOptionPane.showConfirmDialog(
+                this, "Do you want to logout?", "Logout", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) return;
+
+        dispose();
+
+        SwingUtilities.invokeLater(() -> {
+            // Dùng đúng constructor có tham số UserDatabase
+            new LoginFrame(new UserDatabase());
+        });
     }
 
     // helper
