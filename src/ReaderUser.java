@@ -9,7 +9,7 @@ public class ReaderUser implements Reader, Serializable {
 
     private int id;
     private String name;
-    private String phoneNumber;  // Thêm trường số điện thoại
+    private String phoneNumber;  // Thêm số điện thoại
     private BorrowStorage borrowStorage;
     private transient Scanner scanner;
 

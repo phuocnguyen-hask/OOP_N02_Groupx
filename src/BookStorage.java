@@ -6,15 +6,14 @@ public class BookStorage implements Serializable {
 
     private ArrayList<Book> books;
 
-    // Chỉ mục theo ID để tra cứu O(1) – không serialize
     private transient Map<Integer, Book> indexById;
 
     public BookStorage() {
-        loadBooksFromFile();  // Load once during initialization
+        loadBooksFromFile(); 
         rebuildIndex();
     }
 
-    // ----------- Public Methods -----------
+    // ----------- pt public -----------
 
     public ArrayList<Book> getBooks() {
         return books;
@@ -26,17 +25,13 @@ public class BookStorage implements Serializable {
 
         Book existing = indexById.get(book.getId());
         if (existing == null) {
-            // ID chưa có -> thêm mới
             books.add(book);
             indexById.put(book.getId(), book);
             saveBooksToFile();
             return;
         }
-
-        // ID đã có -> so Title/Author
         if (equalsIgnoreCase(existing.getTitle(), book.getTitle())
                 && equalsIgnoreCase(existing.getAuthor(), book.getAuthor())) {
-            // gộp: +1 bản
             existing.setQuantity(existing.getQuantity() + 1);
             saveBooksToFile();
         } else {
@@ -50,7 +45,6 @@ public class BookStorage implements Serializable {
         for (Book b : manyBooks) addBook(b); // addBook đã tự save
     }
 
-    // Giảm 1 bản (hoặc xoá đầu sách nếu còn 1)
     public void removeBookById(int id) {
         if (indexById == null) rebuildIndex();
         Book existing = indexById.get(id);
@@ -65,7 +59,6 @@ public class BookStorage implements Serializable {
         saveBooksToFile();
     }
 
-    // Giảm 1 bản theo đối tượng (giữ tên cũ)
     public void removeBook(Book book) {
         if (book == null) return;
         removeBookById(book.getId());
@@ -76,7 +69,6 @@ public class BookStorage implements Serializable {
         return indexById.get(id);
     }
 
-    // ---- HÀM MỚI: xoá N bản hoặc xoá hết ----
 
     public boolean removeCopiesById(int id, int copies) {
         if (copies <= 0) return false;
@@ -93,7 +85,7 @@ public class BookStorage implements Serializable {
     public boolean removeAllCopiesById(int id) {
         boolean changed = false;
         while (findBookById(id) != null) {
-            removeBookById(id);       // lặp cho tới khi không còn bản nào của ID này
+            removeBookById(id);      
             changed = true;
         }
         return changed;
@@ -130,7 +122,6 @@ public class BookStorage implements Serializable {
         rebuildIndex();
     }
 
-    // ----------- Private helpers -----------
 
     private boolean equalsIgnoreCase(String a, String b) {
         if (a == null && b == null) return true;
@@ -145,7 +136,7 @@ public class BookStorage implements Serializable {
         }
     }
 
-    // ----------- Private I/O Methods -----------
+    // ----------- pt private-----------
 
     @SuppressWarnings("unchecked")
     private void loadBooksFromFile() {

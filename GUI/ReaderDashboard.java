@@ -180,8 +180,7 @@ public class ReaderDashboard extends JFrame {
         }
         applyFilter(); // giữ filter
     }
-
-    /** Gửi yêu cầu mượn tới librarian */
+    //gui yeu cau muon
     private void sendBorrowRequest() {
         int viewRow = bookTable.getSelectedRow();
         if (viewRow == -1) {
@@ -211,7 +210,6 @@ public class ReaderDashboard extends JFrame {
         JOptionPane.showMessageDialog(this, "Request sent! (ID: " + reqId + "). Please wait for approval.");
     }
 
-    /* Trả 1 bản theo ID */
     private void returnByIdDialog() {
         String input = JOptionPane.showInputDialog(this, "Enter Book ID to return:");
         if (input == null) return;
@@ -232,9 +230,9 @@ public class ReaderDashboard extends JFrame {
         }
     }
 
-    /** Danh sách sách đang mượn */
+
     private void showMyBorrowedDialog() {
-        borrowStorage.reloadBorrowListFromFilePublic();   // đảm bảo dữ liệu mới
+        borrowStorage.reloadBorrowListFromFilePublic();   // lay du lieu moi
         java.util.List<BorrowBook> borrowed = borrowStorage.getBorrowedByReader(user.getId());
 
         JDialog dialog = new JDialog(this, "My Borrowed Books", true);
@@ -294,10 +292,8 @@ public class ReaderDashboard extends JFrame {
         close.addActionListener(e -> dialog.dispose());
         dialog.setVisible(true);
     }
-
-    /** NEW: Xem các yêu cầu mượn CHƯA duyệt của chính mình */
+    //cac yeu cau chua duoc duyet
     private void showMyPendingRequestsDialog() {
-        // đảm bảo đọc dữ liệu mới nhất từ file (nếu có)
         try { requestStorage.reloadFromFilePublic(); } catch (Throwable ignore) {}
 
         List<BorrowRequest> pending = requestStorage.getPendingByReader(user.getId());

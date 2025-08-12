@@ -134,7 +134,7 @@ public class LoginFrame extends JFrame {
 
     private void showSignUpDialog() {
         JDialog dialog = new JDialog(this, "Create Account", true);
-        dialog.setSize(400, 350);  // tăng chiều cao để vừa phoneNumber
+        dialog.setSize(400, 350);  
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
@@ -144,7 +144,7 @@ public class LoginFrame extends JFrame {
         JTextField newUserField = new JTextField();
         JPasswordField newPassField = new JPasswordField();
         JPasswordField confirmPassField = new JPasswordField();
-        JTextField phoneField = new JTextField();  // <--- THÊM input phoneNumber
+        JTextField phoneField = new JTextField();  // THÊM input phoneNumber
         JComboBox<String> roleCombo = new JComboBox<>(new String[]{"Reader", "Librarian"});
 
         int row = 0;
@@ -157,8 +157,8 @@ public class LoginFrame extends JFrame {
         gbc.gridx = 0; gbc.gridy = row; dialog.add(new JLabel("Confirm Password:"), gbc);
         gbc.gridx = 1; gbc.gridy = row++; dialog.add(confirmPassField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = row; dialog.add(new JLabel("Phone Number:"), gbc);  // <--- THÊM label phoneNumber
-        gbc.gridx = 1; gbc.gridy = row++; dialog.add(phoneField, gbc);                // <--- THÊM input phoneNumber
+        gbc.gridx = 0; gbc.gridy = row; dialog.add(new JLabel("Phone Number:"), gbc);  // THÊM label phoneNumber
+        gbc.gridx = 1; gbc.gridy = row++; dialog.add(phoneField, gbc);                // THÊM input phoneNumber
 
         gbc.gridx = 0; gbc.gridy = row; dialog.add(new JLabel("Role:"), gbc);
         gbc.gridx = 1; gbc.gridy = row++; dialog.add(roleCombo, gbc);
@@ -178,7 +178,7 @@ public class LoginFrame extends JFrame {
             String username = newUserField.getText().trim();
             String pass = new String(newPassField.getPassword());
             String confirm = new String(confirmPassField.getPassword());
-            String phoneNumber = phoneField.getText().trim();    // <--- Lấy giá trị phoneNumber
+            String phoneNumber = phoneField.getText().trim();    //Lấy phoneNumber
             String role = (String) roleCombo.getSelectedItem();
 
             if (username.isEmpty() || pass.isEmpty() || confirm.isEmpty() || phoneNumber.isEmpty()) {
@@ -195,12 +195,12 @@ public class LoginFrame extends JFrame {
             }
 
             int newId = nextUserId();
-            User newUser = new User(newId, username, pass, phoneNumber, this.borrowStorage);  // <--- gọi constructor mới có phoneNumber
+            User newUser = new User(newId, username, pass, phoneNumber, this.borrowStorage);  
 
             if ("Librarian".equalsIgnoreCase(role)) {
                 newUser.setLibrarianRole();
             } else {
-                newUser.setReaderRole();   // giữ nguyên vì ReaderUser lấy phoneNumber từ User
+                newUser.setReaderRole();   
             }
 
             userDatabase.addUser(newUser);
@@ -224,35 +224,30 @@ public class LoginFrame extends JFrame {
         return max + 1;
     }
 
-    /* ===================== Helpers ===================== */
-
     private static BorrowStorage createDefaultBorrowStorage() {
         BookStorage bookStorage = new BookStorage();
         return new BorrowStorage(bookStorage);
     }
 
-    /** Tải ảnh nền: ưu tiên classpath (/images/lib.jpg), fallback thư mục ./images hoặc ./background.jpg */
+    //anh nen
     private static Image loadBackgroundImage() {
         try {
-            // 1) classpath
             java.net.URL url = LoginFrame.class.getResource("/images/lib.jpg");
             if (url != null) return new ImageIcon(url).getImage();
 
-            // 2) ./images/lib.jpg
             File f1 = new File("images/lib.jpg");
             if (f1.exists()) return new ImageIcon(f1.getAbsolutePath()).getImage();
 
-            // 3) ./background.jpg (tuỳ bạn)
             File f2 = new File("background.jpg");
             if (f2.exists()) return new ImageIcon(f2.getAbsolutePath()).getImage();
         } catch (Exception ignore) { }
-        return null; // không có ảnh → nền trơn
+        return null;
     }
 
-    /* ===== Panel nền vẽ ảnh scale full frame (nhẹ CPU, có cache) ===== */
+
     private static class BackgroundPanel extends JPanel {
         private final Image originalImage;
-        private Image scaled;                 // ảnh đã scale sẵn cho kích thước hiện tại
+        private Image scaled;               
         private Dimension lastSize = new Dimension(0, 0);
 
         BackgroundPanel(Image image) {
@@ -263,7 +258,7 @@ public class LoginFrame extends JFrame {
         @Override
         public void invalidate() {
             super.invalidate();
-            scaled = null; // khi panel đổi size/layout, xoá cache để scale lại
+            scaled = null;
         }
 
         @Override
@@ -273,13 +268,11 @@ public class LoginFrame extends JFrame {
             if (w <= 0 || h <= 0) return;
 
             if (originalImage == null) {
-                // nền trơn khi không có ảnh
                 g.setColor(new Color(235, 238, 241));
                 g.fillRect(0, 0, w, h);
                 return;
             }
 
-            // Chỉ scale lại khi kích thước thay đổi
             if (scaled == null || lastSize.width != w || lastSize.height != h) {
                 scaled = originalImage.getScaledInstance(w, h, Image.SCALE_SMOOTH);
                 lastSize.setSize(w, h);
@@ -289,14 +282,13 @@ public class LoginFrame extends JFrame {
         }
     }
 
-    /* ===== Panel translucent (nền mờ) cho form ===== */
     private static class TranslucentPanel extends JPanel {
         TranslucentPanel() { setOpaque(false); }
         @Override
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(new Color(255, 255, 255, 180)); // trắng mờ
+            g2.setColor(new Color(255, 255, 255, 180));
             g2.fillRoundRect(0, 0, getWidth(), getHeight(), 18, 18);
             g2.dispose();
             super.paintComponent(g);

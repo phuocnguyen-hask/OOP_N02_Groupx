@@ -1,4 +1,4 @@
-// BorrowStorage.java
+
 import java.io.*;
 import java.time.LocalDate;
 import java.util.*;
@@ -7,31 +7,27 @@ public class BorrowStorage implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private ArrayList<BorrowBook> borrowList;
-    private final BookStorage bookStorage;  // Access to central book storage
+    private final BookStorage bookStorage;  
 
     public BorrowStorage(BookStorage bookStorage) {
         this.bookStorage = bookStorage;
         loadBorrowListFromFile();
     }
 
-    // ----------------- Public API -----------------
+    // -phuong thuc public
 
     public void borrowBook(int readerId, int bookId, LocalDate borrowDate, LocalDate returnDate) {
-        // Tìm đầu sách theo ID trong kho
         Book fromStore = bookStorage.findBookById(bookId);
         if (fromStore == null) {
             System.out.println("Book with ID " + bookId + " not found.");
             return;
         }
 
-        // Tạo snapshot Book đơn giản để lưu vào BorrowBook (tránh mang theo quantity)
         Book borrowedCopy = new Book(fromStore.getId(), fromStore.getTitle(), fromStore.getAuthor());
 
-        // Tạo bản ghi mượn
         BorrowBook borrow = new BorrowBook(readerId, borrowedCopy, borrowDate, returnDate);
         borrowList.add(borrow);
 
-        // Giảm 1 bản trong kho (đúng quy tắc quantity)
         bookStorage.removeBookById(bookId);
 
         saveBorrowListToFile();
@@ -56,19 +52,16 @@ public class BorrowStorage implements Serializable {
         System.out.println("No matching borrowed book found.");
     }
 
-    // 1) expose the BookStorage for approval logic (if not present yet)
     public BookStorage getBookStorage() {
         return bookStorage;
     }
 
-    // 2) public reload so UIs can force refresh
     public synchronized void reloadBorrowListFromFilePublic() {
-        loadBorrowListFromFile();   // calls your private loader
+        loadBorrowListFromFile();  
     }
 
-    // 3) ALWAYS reload before reporting a reader’s borrowed list
+
     public synchronized java.util.List<BorrowBook> getBorrowedByReader(int readerId) {
-        // ensure fresh data from file if another window/process wrote it
         loadBorrowListFromFile();
 
         java.util.List<BorrowBook> out = new java.util.ArrayList<>();

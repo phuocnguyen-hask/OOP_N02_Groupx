@@ -5,10 +5,10 @@ public class UserDatabase {
     private ArrayList<User> users;
 
     public UserDatabase() {
-        loadUsersFromFile();  // Load once at startup
+        loadUsersFromFile(); 
     }
 
-    // ----------- Public Methods -----------
+    // phuong thuc public
 
     public ArrayList<User> getAllUsers() {
         return users;
@@ -76,7 +76,7 @@ public class UserDatabase {
         saveUsersToFile();
     }
 
-    // ----------- Private  -----------
+    // phuong thuc private
 
     private void loadUsersFromFile() {
         File file = new File("database/users.obj");
@@ -97,7 +97,7 @@ public class UserDatabase {
 
     private void saveUsersToFile() {
         File file = new File("database/users.obj");
-        file.getParentFile().mkdirs();  // Ensure folder exists
+        file.getParentFile().mkdirs(); 
 
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
             oos.writeObject(users);

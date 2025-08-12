@@ -6,17 +6,15 @@ public class RequestStorage implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private ArrayList<BorrowRequest> requests;
-    private int lastId; // auto-increment id
+    private int lastId; 
 
     public RequestStorage() {
         loadFromFile();
         if (requests == null) requests = new ArrayList<>();
-        // gợi ý lastId từ dữ liệu cũ
         for (BorrowRequest r : requests) {
             try {
                 lastId = Math.max(lastId, r.getRequestId());
             } catch (Throwable ignore) {
-                // nếu class dùng getId(): fallback
                 try {
                     lastId = Math.max(lastId, (int) BorrowRequest.class.getMethod("getId").invoke(r));
                 } catch (Throwable ignored) {}
@@ -24,26 +22,24 @@ public class RequestStorage implements Serializable {
         }
     }
 
-    /* ===================== Public API ===================== */
+    /* phuong thuc public */
 
-    /** Tạo id mới tăng dần */
     public synchronized int nextId() {
         return ++lastId;
     }
 
-    /** Thêm request và lưu file */
+
     public synchronized void addRequest(BorrowRequest r) {
         if (r == null) return;
         requests.add(r);
         saveToFile();
     }
 
-    /** Lấy TẤT CẢ request (copy phòng thủ) */
+
     public synchronized List<BorrowRequest> getAll() {
         return new ArrayList<>(requests);
     }
 
-    /** Lấy tất cả request còn pending */
     public synchronized List<BorrowRequest> getPending() {
         ArrayList<BorrowRequest> out = new ArrayList<>();
         for (BorrowRequest r : requests) {
@@ -52,7 +48,6 @@ public class RequestStorage implements Serializable {
         return out;
     }
 
-    /** Lấy request của 1 reader (mọi trạng thái) */
     public synchronized List<BorrowRequest> getByReader(int readerId) {
         ArrayList<BorrowRequest> out = new ArrayList<>();
         for (BorrowRequest r : requests) {
@@ -61,7 +56,6 @@ public class RequestStorage implements Serializable {
         return out;
     }
 
-    /** Lấy request PENDING của 1 reader (phục vụ màn "My Requests") */
     public synchronized List<BorrowRequest> getPendingByReader(int readerId) {
         ArrayList<BorrowRequest> out = new ArrayList<>();
         for (BorrowRequest r : requests) {
@@ -72,12 +66,6 @@ public class RequestStorage implements Serializable {
         return out;
     }
 
-    /**
-     * Librarian phê duyệt request:
-     * - Kiểm tra còn sách trong BookStorage
-     * - Gọi borrowStorage.borrowBook(...) để mượn thực
-     * - Cập nhật trạng thái APPROVED + decisionDate
-     */
     public synchronized boolean approveRequest(int requestId, BorrowStorage borrowStorage) {
         BorrowRequest r = findById(requestId);
         if (r == null || r.getStatus() != BorrowRequest.Status.PENDING) return false;
@@ -86,7 +74,7 @@ public class RequestStorage implements Serializable {
         BookStorage bs = borrowStorage.getBookStorage();
         if (bs == null) return false;
 
-        // còn sách không?
+        // check xem con sach k
         Book available = bs.findBookById(r.getBookId());
         if (available == null) return false;
 
@@ -102,7 +90,7 @@ public class RequestStorage implements Serializable {
         return true;
     }
 
-    /** Librarian từ chối request (đổi sang REJECTED) */
+    //tu choi request
     public synchronized boolean rejectRequest(int requestId) {
         BorrowRequest r = findById(requestId);
         if (r == null || r.getStatus() != BorrowRequest.Status.PENDING) return false;
@@ -112,11 +100,6 @@ public class RequestStorage implements Serializable {
         return true;
     }
 
-    /**
-     * Reader tự huỷ request của chính mình nếu còn PENDING.
-     * Ở đây mặc định là XÓA request khỏi danh sách.
-     * (Nếu bạn có trạng thái CANCELLED trong enum, có thể đổi sang setStatus(CANCELLED))
-     */
     public synchronized boolean cancelIfPending(int requestId, int readerId) {
         Iterator<BorrowRequest> it = requests.iterator();
         while (it.hasNext()) {
@@ -131,12 +114,10 @@ public class RequestStorage implements Serializable {
         return false;
     }
 
-    /** Cho phép UI nạp lại từ file trước khi hiển thị danh sách */
+    //hien thi lai
     public synchronized void reloadFromFilePublic() {
         loadFromFile();
     }
-
-    /* ===================== Helpers ===================== */
 
     private int getReqId(BorrowRequest r) {
         try {
@@ -157,8 +138,6 @@ public class RequestStorage implements Serializable {
         }
         return null;
     }
-
-    /* ===================== I/O ===================== */
 
     @SuppressWarnings("unchecked")
     private void loadFromFile() {
