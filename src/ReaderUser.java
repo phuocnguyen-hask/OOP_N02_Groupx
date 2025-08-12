@@ -1,21 +1,36 @@
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.Collections;
+import java.util.List;
 import java.util.Scanner;
 
-public class ReaderUser implements Reader, Serializable{
+public class ReaderUser implements Reader, Serializable {
     private static final long serialVersionUID = 1L;
 
     private int id;
     private String name;
+    private String phoneNumber;  // Thêm trường số điện thoại
     private BorrowStorage borrowStorage;
     private transient Scanner scanner;
 
-    public ReaderUser(int id, String name, BorrowStorage borrowStorage) {
+    public ReaderUser(int id, String name, String phoneNumber, BorrowStorage borrowStorage) {
         this.id = id;
         this.name = name;
         this.borrowStorage = borrowStorage;
+        this.phoneNumber = phoneNumber;
         this.scanner = new Scanner(System.in);
     }
+
+    // getter cho phoneNumber
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    // setter cho phoneNumber
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+    
 
     @Override
     public void borrowBook() {
@@ -44,5 +59,11 @@ public class ReaderUser implements Reader, Serializable{
 
     public String getName() {
         return name;
+    }
+
+    //method moi de lay tt sach dang muon
+    public List<BorrowBook> getBorrowedBooks() {
+        if (borrowStorage == null) return Collections.emptyList();
+        return borrowStorage.listBorrowedByReader(id);
     }
 }

@@ -3,12 +3,13 @@ import java.io.Serializable;
 public class User implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    // KHÔNG serialize trực tiếp object hành vi (dễ lỗi version khi thay đổi code)
+    // KHÔNG serialize trực tiếp object hành vi
     private transient Reader reader;
     private transient Librarian lib;
 
     private int id;
     private String userName;
+    private String phoneNumber;
     private String passWord;
 
     // Lưu vai trò để khôi phục sau khi deserialize
@@ -18,10 +19,11 @@ public class User implements Serializable {
     // Dùng chung cho mượn/trả -> nắm luôn BookStorage
     private BorrowStorage borrowStorage;
 
-    public User(int id, String userName, String passWord, BorrowStorage borrowStorage) {
+    public User(int id, String userName, String passWord, String phoneNumber, BorrowStorage borrowStorage) {
         this.id = id;
         this.userName = userName;
         this.passWord = passWord;
+        this.phoneNumber = phoneNumber;
         this.borrowStorage = borrowStorage;
 
         // Khởi tạo mặc định (chưa set role cụ thể)
@@ -36,22 +38,33 @@ public class User implements Serializable {
     public Librarian getLib(){ return this.lib; }
     public Reader getReader(){ return this.reader; }
 
+    // Thêm vào class User
+
+    public String getPhoneNumber() {
+        return this.phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+
     // ====== Role helpers ======
     public boolean isLibrarian() { return role == Role.LIBRARIAN; }
     public Role getRole() { return role; }
 
-    // ====== BorrowStorage (để “bơm” lại nếu user cũ thiếu) ======
+    // ====== BorrowStorage ======
     public BorrowStorage getBorrowStorage() { return this.borrowStorage; }
     public void setBorrowStorage(BorrowStorage borrowStorage) { this.borrowStorage = borrowStorage; }
 
-    /** Lấy BookStorage an toàn: ưu tiên qua BorrowStorage (ổn định cho cả Reader/Librarian). */
+    // lấy bookStorage //
     public BookStorage getStorage() {
         if (this.borrowStorage != null) return this.borrowStorage.getBookStorage();
         if (this.lib != null) return this.lib.getStorage();
         return null;
     }
 
-    // ====== Librarian functions (giữ nguyên tên API cũ) ======
+    // ====== libra functions ======
     public void addBook(Book book) { this.lib.addBook(book); }
     public void removeBook(int bookId) { this.lib.removeBook(bookId); }
     public void showAllBooks() { this.lib.showAllBooks(); }
@@ -73,7 +86,7 @@ public class User implements Serializable {
 
     public void setReaderRole() {
         this.role = Role.READER;
-        this.reader = new ReaderUser(id, userName, borrowStorage);
+        this.reader = new ReaderUser(id, userName, phoneNumber, borrowStorage);
         this.lib = new NonLibrarianUser();
     }
 
@@ -83,7 +96,7 @@ public class User implements Serializable {
             this.lib = new LibrarianUser();
             this.reader = new NonReaderUser();
         } else {
-            this.reader = new ReaderUser(id, userName, borrowStorage);
+            this.reader = new ReaderUser(id, userName, phoneNumber, borrowStorage);
             this.lib = new NonLibrarianUser();
         }
         return this;

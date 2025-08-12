@@ -120,7 +120,10 @@ public class LoginFrame extends JFrame {
             // đảm bảo có BorrowStorage nếu user cũ thiếu
             if (user.getBorrowStorage() == null) user.setBorrowStorage(this.borrowStorage);
 
-            if (user.isLibrarian()) new LibrarianDashboard(user);
+            if (user.isLibrarian()){
+                UserDatabase userDatabase = new UserDatabase();
+                new LibrarianDashboard(user, userDatabase);
+            } 
             else new ReaderDashboard(user);
             dispose();
 
@@ -131,7 +134,7 @@ public class LoginFrame extends JFrame {
 
     private void showSignUpDialog() {
         JDialog dialog = new JDialog(this, "Create Account", true);
-        dialog.setSize(400, 300);
+        dialog.setSize(400, 350);  // tăng chiều cao để vừa phoneNumber
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
@@ -141,6 +144,7 @@ public class LoginFrame extends JFrame {
         JTextField newUserField = new JTextField();
         JPasswordField newPassField = new JPasswordField();
         JPasswordField confirmPassField = new JPasswordField();
+        JTextField phoneField = new JTextField();  // <--- THÊM input phoneNumber
         JComboBox<String> roleCombo = new JComboBox<>(new String[]{"Reader", "Librarian"});
 
         int row = 0;
@@ -152,6 +156,9 @@ public class LoginFrame extends JFrame {
 
         gbc.gridx = 0; gbc.gridy = row; dialog.add(new JLabel("Confirm Password:"), gbc);
         gbc.gridx = 1; gbc.gridy = row++; dialog.add(confirmPassField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = row; dialog.add(new JLabel("Phone Number:"), gbc);  // <--- THÊM label phoneNumber
+        gbc.gridx = 1; gbc.gridy = row++; dialog.add(phoneField, gbc);                // <--- THÊM input phoneNumber
 
         gbc.gridx = 0; gbc.gridy = row; dialog.add(new JLabel("Role:"), gbc);
         gbc.gridx = 1; gbc.gridy = row++; dialog.add(roleCombo, gbc);
@@ -171,9 +178,10 @@ public class LoginFrame extends JFrame {
             String username = newUserField.getText().trim();
             String pass = new String(newPassField.getPassword());
             String confirm = new String(confirmPassField.getPassword());
+            String phoneNumber = phoneField.getText().trim();    // <--- Lấy giá trị phoneNumber
             String role = (String) roleCombo.getSelectedItem();
 
-            if (username.isEmpty() || pass.isEmpty() || confirm.isEmpty()) {
+            if (username.isEmpty() || pass.isEmpty() || confirm.isEmpty() || phoneNumber.isEmpty()) {
                 JOptionPane.showMessageDialog(dialog, "All fields are required.");
                 return;
             }
@@ -187,12 +195,12 @@ public class LoginFrame extends JFrame {
             }
 
             int newId = nextUserId();
-            User newUser = new User(newId, username, pass, this.borrowStorage);
+            User newUser = new User(newId, username, pass, phoneNumber, this.borrowStorage);  // <--- gọi constructor mới có phoneNumber
 
             if ("Librarian".equalsIgnoreCase(role)) {
                 newUser.setLibrarianRole();
             } else {
-                newUser.setReaderRole();
+                newUser.setReaderRole();   // giữ nguyên vì ReaderUser lấy phoneNumber từ User
             }
 
             userDatabase.addUser(newUser);
@@ -203,6 +211,7 @@ public class LoginFrame extends JFrame {
         dialog.getRootPane().setDefaultButton(createBtn);
         dialog.setVisible(true);
     }
+
 
     private int nextUserId() {
         ArrayList<User> all = userDatabase.getAllUsers();

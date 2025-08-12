@@ -72,8 +72,11 @@ public class UserDatabase {
     public void reloadUsersFromFile() {
         loadUsersFromFile();
     }
+    public void save() {
+        saveUsersToFile();
+    }
 
-    // ----------- Private I/O Methods -----------
+    // ----------- Private  -----------
 
     private void loadUsersFromFile() {
         File file = new File("database/users.obj");

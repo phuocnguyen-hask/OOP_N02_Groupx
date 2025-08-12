@@ -7,7 +7,7 @@ public class Main {
             BookStorage bookStorage = new BookStorage();          // kho sách dùng chung
             BorrowStorage borrowStorage = new BorrowStorage(bookStorage); // mượn trả dùng chung
 
-            // Mở màn hình đăng nhập, truyền DB + borrowStorage dùng chung
+            //màn hình đăng nhập
             new LoginFrame(userDatabase, borrowStorage);
         });
     }

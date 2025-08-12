@@ -10,4 +10,8 @@ public class NonReaderUser implements Reader, Serializable{
         //can't return book
         System.out.println("Can't return");
     }
+    public String getPhoneNumber() {
+        return "hello, world";
+    }
+
 }

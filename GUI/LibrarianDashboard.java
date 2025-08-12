@@ -3,7 +3,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
-import javax.swing.RowFilter;
+
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,30 +13,31 @@ import java.time.LocalDate;
 public class LibrarianDashboard extends JFrame {
     private final User user;
     private final BookStorage bookStorage;
-    private final BorrowStorage borrowStorage;          // NEW: dùng khi approve
+    private final BorrowStorage borrowStorage;
+
+    private final UserDatabase userDatabase;  // --- THÊM ---
 
     private JTable bookTable;
     private DefaultTableModel model;
 
-    // Search + sorter
     private JTextField searchField;
-    private JComboBox<String> scopeCombo; // Title / Author / ID / Title+Author / All
+    private JComboBox<String> scopeCombo;
     private TableRowSorter<DefaultTableModel> sorter;
 
-    // Requests storage
     private final RequestStorage requestStorage = new RequestStorage();
 
-    // Column indexes
     private static final int COL_SELECT  = 0;
     private static final int COL_ID      = 1;
     private static final int COL_TITLE   = 2;
     private static final int COL_AUTHOR  = 3;
     private static final int COL_QTY     = 4;
 
-    public LibrarianDashboard(User user) {
+    // Constructor: thêm userDatabase vào tham số và gán
+    public LibrarianDashboard(User user, UserDatabase userDatabase) {
         this.user = user;
+        this.userDatabase = userDatabase;  // --- THÊM ---
         this.bookStorage = user.getStorage();
-        this.borrowStorage = user.getBorrowStorage(); // NEW
+        this.borrowStorage = user.getBorrowStorage();
 
         setTitle("Librarian Dashboard - " + user.username());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -44,7 +45,6 @@ public class LibrarianDashboard extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        // TOP: Title + Search
         JPanel topPanel = new JPanel(new BorderLayout());
 
         JLabel title = new JLabel("Books in Library", SwingConstants.CENTER);
@@ -65,7 +65,6 @@ public class LibrarianDashboard extends JFrame {
 
         add(topPanel, BorderLayout.NORTH);
 
-        // CENTER: Table
         model = new DefaultTableModel(new Object[]{"Select", "ID", "Title", "Author", "Quantity"}, 0) {
             @Override public Class<?> getColumnClass(int columnIndex) {
                 return columnIndex == COL_SELECT ? Boolean.class : Object.class;
@@ -83,31 +82,33 @@ public class LibrarianDashboard extends JFrame {
 
         add(new JScrollPane(bookTable), BorderLayout.CENTER);
 
-        // SOUTH: Buttons
+        // --- THÊM nút View Readers ---
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton refreshButton = new JButton("Refresh");
         JButton addButton = new JButton("Add Book");
         JButton removeButton = new JButton("Remove Selected");
         JButton editButton = new JButton("Edit Selected");
-        JButton requestsButton = new JButton("Requests...");  // NEW
+        JButton requestsButton = new JButton("Requests...");
+        JButton viewReadersButton = new JButton("View Readers");   // --- THÊM ---
         JButton logoutButton = new JButton("Logout");
 
         refreshButton.addActionListener(e -> refreshBookTable());
         addButton.addActionListener(e -> showAddBookDialog());
         removeButton.addActionListener(e -> removeSelectedBooks());
         editButton.addActionListener(e -> editSelectedBook());
-        requestsButton.addActionListener(e -> showRequestsDialog()); // NEW
+        requestsButton.addActionListener(e -> showRequestsDialog());
+        viewReadersButton.addActionListener(e -> showReadersDialog()); // --- THÊM ---
         logoutButton.addActionListener(e -> doLogout());
 
         buttonPanel.add(refreshButton);
         buttonPanel.add(addButton);
         buttonPanel.add(removeButton);
         buttonPanel.add(editButton);
-        buttonPanel.add(requestsButton); // NEW
+        buttonPanel.add(requestsButton);
+        buttonPanel.add(viewReadersButton);   // --- THÊM ---
         buttonPanel.add(logoutButton);
         add(buttonPanel, BorderLayout.SOUTH);
 
-        // LIVE SEARCH
         searchField.getDocument().addDocumentListener(new DocumentListener() {
             private void onChange() { applyFilter(searchField.getText().trim()); }
             public void insertUpdate(DocumentEvent e) { onChange(); }
@@ -129,6 +130,169 @@ public class LibrarianDashboard extends JFrame {
         setVisible(true);
     }
 
+    // Thêm hàm showEditPhoneDialog vào LibrarianDashboard
+    private void showEditPhoneDialog(User user) {
+        if (user == null) {
+            JOptionPane.showMessageDialog(this, "No user selected.");
+            return;
+        }
+
+        String currentPhone = user.getPhoneNumber() != null ? user.getPhoneNumber() : "";
+
+        String newPhone = JOptionPane.showInputDialog(
+            this,
+            "Edit phone number for " + user.username() + ":",
+            currentPhone
+        );
+
+        if (newPhone != null) {
+            newPhone = newPhone.trim();
+            if (newPhone.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Phone number cannot be empty.");
+                return;
+            }
+            user.setPhoneNumber(newPhone);
+
+            // Thêm dòng này để lưu lại dữ liệu userDatabase sau khi sửa
+            userDatabase.save();
+
+            JOptionPane.showMessageDialog(this, "Phone number updated successfully.");
+        }
+    }
+
+
+// Sửa lại phần showReadersDialog để thêm nút "Edit Phone"
+    private void showReadersDialog() {
+        JDialog dlg = new JDialog(this, "Readers List", true);
+        dlg.setSize(700, 400);
+        dlg.setLocationRelativeTo(this);
+        dlg.setLayout(new BorderLayout(8, 8));
+
+        DefaultTableModel modelReaders = new DefaultTableModel(
+            new Object[]{"ID", "Username"}, 0) {
+            @Override
+            public boolean isCellEditable(int row, int col) {
+                return false;
+            }
+        };
+
+        JTable readersTable = new JTable(modelReaders);
+        readersTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        readersTable.setRowHeight(24);
+
+        // Load readers vào bảng
+        for (User u : userDatabase.getAllUsers()) {
+            if (u.getRole() == User.Role.READER) {
+                modelReaders.addRow(new Object[]{u.getId(), u.username()});
+            }
+        }
+
+        dlg.add(new JScrollPane(readersTable), BorderLayout.CENTER);
+
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton viewDetailsBtn = new JButton("View Details");
+        JButton editPhoneBtn = new JButton("Edit Phone");  // Nút mới
+        JButton closeBtn = new JButton("Close");
+
+        bottomPanel.add(viewDetailsBtn);
+        bottomPanel.add(editPhoneBtn);  // Thêm nút
+        bottomPanel.add(closeBtn);
+        dlg.add(bottomPanel, BorderLayout.SOUTH);
+
+        viewDetailsBtn.addActionListener(e -> {
+            int selectedRow = readersTable.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(dlg, "Please select a reader first.");
+                return;
+            }
+            int modelRow = readersTable.convertRowIndexToModel(selectedRow);
+            int readerId = (Integer) modelReaders.getValueAt(modelRow, 0);
+            User selectedUser = userDatabase.findById(readerId);
+
+            if (selectedUser == null) {
+                JOptionPane.showMessageDialog(dlg, "Selected reader not found.");
+                return;
+            }
+
+            showReaderDetailDialog(selectedUser);
+        });
+
+        editPhoneBtn.addActionListener(e -> {
+            int selectedRow = readersTable.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(dlg, "Please select a reader first.");
+                return;
+            }
+            int modelRow = readersTable.convertRowIndexToModel(selectedRow);
+            int readerId = (Integer) modelReaders.getValueAt(modelRow, 0);
+            User selectedUser = userDatabase.findById(readerId);
+
+            if (selectedUser == null) {
+                JOptionPane.showMessageDialog(dlg, "Selected reader not found.");
+                return;
+            }
+
+            showEditPhoneDialog(selectedUser);
+        });
+
+        closeBtn.addActionListener(e -> dlg.dispose());
+
+        dlg.setVisible(true);
+    }
+
+
+    // Hàm hiện dialog chi tiết Reader và sách đang mượn
+   private void showReaderDetailDialog(User user) {
+        if (user == null) return;
+
+        JDialog dialog = new JDialog(this, "Reader Details - " + user.username(), true);
+        dialog.setSize(600, 400);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout(8, 8));
+
+        JPanel infoPanel = new JPanel(new GridLayout(3, 2, 8, 8));  // sửa 2 -> 3 dòng để thêm số điện thoại
+        infoPanel.add(new JLabel("Reader ID:"));
+        infoPanel.add(new JLabel(String.valueOf(user.getId())));
+        infoPanel.add(new JLabel("Username:"));
+        infoPanel.add(new JLabel(user.username()));
+        infoPanel.add(new JLabel("Phone Number:"));   // thêm label mới
+        infoPanel.add(new JLabel(user.getPhoneNumber() != null ? user.getPhoneNumber() : ""));
+
+        dialog.add(infoPanel, BorderLayout.NORTH);
+
+        // Lấy sách mượn của reader
+        List<BorrowBook> borrowedBooks = user.getBorrowStorage().listBorrowedByReader(user.getId());
+
+        DefaultTableModel borrowModel = new DefaultTableModel(
+            new Object[]{"Book ID", "Title", "Author", "Borrow Date", "Return Date"}, 0
+        );
+        for (BorrowBook b : borrowedBooks) {
+            borrowModel.addRow(new Object[]{
+                b.getBook().getId(),
+                b.getBook().getTitle(),
+                b.getBook().getAuthor(),
+                b.getBorrowDate(),
+                b.getReturnDate()
+            });
+        }
+        JTable borrowTable = new JTable(borrowModel);
+        borrowTable.setRowHeight(24);
+
+        dialog.add(new JScrollPane(borrowTable), BorderLayout.CENTER);
+
+        JButton closeBtn = new JButton("Close");
+        closeBtn.addActionListener(e -> dialog.dispose());
+
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        bottomPanel.add(closeBtn);
+        dialog.add(bottomPanel, BorderLayout.SOUTH);
+
+        dialog.setVisible(true);
+    }
+
+
+
+
     private void refreshBookTable() {
         model.setRowCount(0);
         bookStorage.reloadBooksFromFile();
@@ -141,6 +305,7 @@ public class LibrarianDashboard extends JFrame {
         applyFilter(searchField.getText().trim());
     }
 
+    //books filter
     private void applyFilter(String query) {
         if (query == null || query.isEmpty()) { sorter.setRowFilter(null); return; }
         String pat = "(?i)" + Pattern.quote(query);
@@ -218,6 +383,7 @@ public class LibrarianDashboard extends JFrame {
         dialog.setVisible(true);
     }
 
+    //remove books
     private void removeSelectedBooks() {
         List<Integer> selectedIds = new ArrayList<>();
         for (int i = 0; i < model.getRowCount(); i++) {
@@ -259,6 +425,7 @@ public class LibrarianDashboard extends JFrame {
         }
     }
 
+    //edit books
     private void editSelectedBook() {
         int selectedModelRow = -1;
         for (int i = 0; i < model.getRowCount(); i++) {
@@ -329,7 +496,7 @@ public class LibrarianDashboard extends JFrame {
         dialog.setVisible(true);
     }
 
-    /* NEW: Dialog quản lý các yêu cầu mượn */
+    //quan li yeu cao muon
     private void showRequestsDialog() {
         JDialog dlg = new JDialog(this, "Pending Borrow Requests", true);
         dlg.setSize(820, 420);
@@ -416,6 +583,7 @@ public class LibrarianDashboard extends JFrame {
         dlg.setVisible(true);
     }
 
+    //logout
     private void doLogout() {
         int confirm = JOptionPane.showConfirmDialog(
                 this, "Do you want to logout?", "Logout", JOptionPane.YES_NO_OPTION);
