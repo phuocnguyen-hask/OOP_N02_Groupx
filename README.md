@@ -17,27 +17,29 @@
 - Quản lý mượn và trả sách:
   - Tạo phiếu mượn/trả
   - Theo dõi hạn trả sách
-## Doi tuong chinh
-+------------------+
-|      Book        |
-+------------------+
-| - id: String     |
-| - title: String  |
-| - author: String |
-| - category: String |
-| - quantity: int  |
-+------------------+
-| + getters/setters|
-+------------------+
-
 +--------------------+
-|    Librarian       |
+|       Book         |
 +--------------------+
 | - id: String       |
-| - name: String     |
+| - title: String    |
+| - author: String   |
+| - category: String |
+| - quantity: int    |
 +--------------------+
 | + getters/setters  |
 +--------------------+
+
++--------------------+
+|     Librarian      |
++--------------------+
+| - id: String       |
+| - name: String     |
+| - email: String    |
+| - phone: String    |
++--------------------+
+| + getters/setters  |
++--------------------+
+
 
 
 
