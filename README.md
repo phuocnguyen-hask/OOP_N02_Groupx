@@ -18,17 +18,30 @@
   - Tạo phiếu mượn/trả
   - Theo dõi hạn trả sách
 ## Cac doi tuong chinh
-| Class         | Attributes         |
-| ------------- | ------------------ |
-| **Book**      | - id: String       |
-|               | - title: String    |
-|               | - author: String   |
-|               | - category: String |
-|               | - quantity: int    |
-| **Librarian** | - id: String       |
-|               | - name: String     |
-|               | - email: String    |
-|               | - phone: String    |
+| Class             | Attributes                          | Methods                  |
+| ----------------- | ----------------------------------- | ------------------------ |
+| **Book**          | - id: String                        | + getters/setters        |
+|                   | - title: String                     |                          |
+|                   | - author: String                    |                          |
+|                   | - category: String                  |                          |
+|                   | - quantity: int                     |                          |
+| **Librarian**     | - id: String                        | + getters/setters        |
+|                   | - name: String                      |                          |
+|                   | - email: String                     |                          |
+|                   | - phone: String                     |                          |
+| **Reader**        | - id: String                        | + getters/setters        |
+|                   | - name: String                      |                          |
+|                   | - email: String                     |                          |
+|                   | - phone: String                     |                          |
+|                   | - address: String                   |                          |
+| **BookStorage**   | - books: List<Book>                 | + addBook()              |
+|                   |                                     | + removeBook()           |
+|                   |                                     | + findBookById()         |
+|                   |                                     | + getAllBooks()          |
+| **BorrowStorage** | - borrowedBooks: List<BorrowRecord> | + addBorrowRecord()      |
+|                   |                                     | + removeBorrowRecord()   |
+|                   |                                     | + findBorrowRecordById() |
+|                   |                                     | + getAllBorrowRecords()  |
 
 
 
