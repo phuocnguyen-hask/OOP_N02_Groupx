@@ -1,8 +1,49 @@
-# DOING from scratch
-Make library management system. Currently i think it should have
-- Book
-- Library
-- User
-- Librarian
-as classes.
-Name: Phuoc
+# 📚 Quản Lý Thư Viện
+
+## Giới thiệu
+**Quản Lý Thư Viện** là một ứng dụng được phát triển bằng Java, sử dụng thư viện **Swing** để xây dựng giao diện đồ họa. Ứng dụng giúp thư viện quản lý thông tin sách, độc giả và hoạt động mượn/trả sách một cách hiệu quả và dễ dàng.
+
+## 🧑‍💻 Thành viên thực hiện
+- **Nguyễn Công Phước**
+- **Lê Minh Đức**
+
+## 🎯 Tính năng chính
+- Quản lý sách:
+  - Thêm, sửa, xóa sách
+  - Tìm kiếm theo tên sách, tác giả, thể loại,...
+- Quản lý độc giả:
+  - Đăng ký thành viên mới
+  - Cập nhật và tìm kiếm thông tin độc giả
+- Quản lý mượn và trả sách:
+  - Tạo phiếu mượn/trả
+  - Theo dõi hạn trả sách
+## Doi tuong chinh
++------------------+
+|      Book        |
++------------------+
+| - id: String     |
+| - title: String  |
+| - author: String |
+| - category: String |
+| - quantity: int  |
++------------------+
+| + getters/setters|
++------------------+
+
++--------------------+
+|    Librarian       |
++--------------------+
+| - id: String       |
+| - name: String     |
++--------------------+
+| + getters/setters  |
++--------------------+
+
+
+
+## 🛠 Công nghệ sử dụng
+- **Ngôn ngữ**: Java
+- **Giao diện**: Java Swing
+- **Lưu trữ dữ liệu**: File nhi phan
+
+## 🚀 Cách chạy chương trình
